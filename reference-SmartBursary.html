@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SmartBursary</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F3F6F4;--card:#fff;--ink:#12261D;--mute:#5B6B63;--line:#D5DED9;--g:#0E6B4A;--g2:#DDF0E6;--y:#F2B705;--r:#B3261E;--r2:#FBE4E1;--a:#8A5A00;--a2:#FCEFC7;--b:#1F4E8C;--b2:#E0EAF7;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0D1612;--card:#15221B;--ink:#E8F1EC;--mute:#9BB0A5;--line:#2A3B32;--g:#4CC795;--g2:#17372A;--r:#FF8A80;--r2:#3D1D1A;--a:#F5C84C;--a2:#3A2E0B;--b:#8DB6F0;--b2:#16283F}}
+:root[data-theme="dark"]{--bg:#0D1612;--card:#15221B;--ink:#E8F1EC;--mute:#9BB0A5;--line:#2A3B32;--g:#4CC795;--g2:#17372A;--r:#FF8A80;--r2:#3D1D1A;--a:#F5C84C;--a2:#3A2E0B;--b:#8DB6F0;--b2:#16283F}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Figtree,system-ui,sans-serif}
+h1,h2,h3{font-family:'Bricolage Grotesque',Figtree,sans-serif;line-height:1.1;margin:0 0 .5em;letter-spacing:-.02em}
+h1{font-size:clamp(2.2rem,6vw,3.8rem);font-weight:800}h2{font-size:1.7rem;font-weight:700}h3{font-size:1.1rem;font-weight:700}
+p{margin:0 0 1em;max-width:62ch}
+a{color:inherit}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+header{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.bar{display:flex;align-items:center;gap:16px;min-height:60px;flex-wrap:wrap}
+.logo{font:800 1.25rem 'Bricolage Grotesque',sans-serif;display:flex;align-items:center;gap:8px;cursor:pointer;margin-right:auto;border:0;background:none;color:var(--ink);padding:0}
+.logo i{width:22px;height:22px;background:var(--g);border-radius:6px 6px 6px 0;display:inline-block;position:relative}
+.logo i:after{content:"";position:absolute;right:-4px;top:-4px;width:9px;height:9px;border-radius:50%;background:var(--y)}
+nav{display:flex;gap:4px;flex-wrap:wrap}
+nav button,.role button{border:0;background:none;color:var(--mute);font:500 .95rem Figtree;padding:8px 12px;border-radius:8px;cursor:pointer}
+nav button[aria-current=page]{background:var(--g2);color:var(--g);font-weight:600}
+.role{display:flex;border:1px solid var(--line);border-radius:10px;padding:2px}
+.role button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,tr:focus-visible{outline:3px solid var(--y);outline-offset:2px}
+main{padding:36px 0 60px;min-height:70vh}
+.btn{display:inline-block;border:0;background:var(--g);color:#fff;font:600 1rem Figtree;padding:11px 20px;border-radius:10px;cursor:pointer}
+:root[data-theme="dark"] .btn,:root:not([data-theme="light"]) .btn{color:#06130D}
+.btn.ghost{background:none;border:1.5px solid var(--line);color:var(--ink)}
+.btn.sm{padding:6px 12px;font-size:.88rem}
+.btn.red{background:var(--r)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px}
+.hero{display:grid;grid-template-columns:1.1fr 1fr;gap:40px;align-items:center}
+.lead{font-size:1.15rem;color:var(--mute)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
+label{display:block;font-weight:600;font-size:.9rem;margin-bottom:4px}
+.grid{display:grid;gap:16px}.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
+.chip{display:inline-block;padding:2px 10px;border-radius:99px;font-size:.8rem;font-weight:600;background:var(--b2);color:var(--b)}
+.chip.ok{background:var(--g2);color:var(--g)}.chip.warn{background:var(--a2);color:var(--a)}.chip.bad{background:var(--r2);color:var(--r)}
+.steps{list-style:none;margin:18px 0 0;padding:0;position:relative}
+.steps li{display:flex;gap:12px;align-items:center;padding:7px 0;color:var(--mute);position:relative}
+.steps li:before{content:"";width:16px;height:16px;border-radius:50%;border:2px solid var(--line);background:var(--card);flex:none;z-index:1}
+.steps li:not(:last-child):after{content:"";position:absolute;left:7px;top:26px;bottom:-8px;width:2px;background:var(--line)}
+.steps li.done{color:var(--ink)}.steps li.done:before{background:var(--g);border-color:var(--g)}
+.steps li.done:not(:last-child):after{background:var(--g)}
+.steps li.now{font-weight:700;color:var(--ink)}.steps li.now:before{background:var(--y);border-color:var(--y);box-shadow:0 0 0 5px color-mix(in srgb,var(--y) 30%,transparent)}
+.tabs{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap}
+.tabs span{padding:6px 14px;border-radius:99px;border:1.5px solid var(--line);font-size:.9rem;color:var(--mute)}
+.tabs span.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}.tabs span.ok{border-color:var(--g);color:var(--g)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px}
+.stat b{display:block;font:800 2rem 'Bricolage Grotesque',sans-serif}.stat small{color:var(--mute)}
+.tw{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:640px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);font-size:.92rem}th{color:var(--mute);font-weight:600}
+tbody tr{cursor:pointer}tbody tr:hover,tbody tr.sel{background:var(--g2)}
+.meter{height:8px;border-radius:9px;background:var(--line);width:90px;display:inline-block;vertical-align:middle;margin-right:8px;overflow:hidden}.meter i{display:block;height:100%;background:var(--g)}
+.split{display:grid;grid-template-columns:1.6fr 1fr;gap:16px;align-items:start}
+.note{background:var(--a2);color:var(--a);border-radius:10px;padding:10px 14px;font-size:.9rem;margin:12px 0}
+.err{color:var(--r);font-size:.88rem;margin:6px 0 0}
+ul.plain{margin:0;padding-left:1.1em}ul.plain li{margin:4px 0}
+footer{border-top:1px solid var(--line);padding:22px 0;color:var(--mute);font-size:.88rem}
+@media(max-width:800px){.hero,.split,.g2{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:no-preference){.steps li.now:before{animation:p 2s infinite}@keyframes p{50%{box-shadow:0 0 0 9px transparent}}}
+</style>
+</head>
+<body>
+<header><div class="wrap bar">
+<button class="logo" onclick="go('home')" aria-label="SmartBursary home"><i></i>SmartBursary</button>
+<nav id="nav" aria-label="Main"></nav>
+<div class="role" role="group" aria-label="View as"><button id="rA" aria-pressed="true" onclick="setRole('applicant')">Applicant</button><button id="rS" aria-pressed="false" onclick="setRole('staff')">Staff</button></div>
+</div></header>
+<main><div class="wrap" id="app"></div></main>
+<footer><div class="wrap">SmartBursary prototype. AI shows indicators only; the committee makes every award decision. Sample data.</div></footer>
+<script>
+const PATH=['Submitted','Under Review','Verification','Committee Review','Approved','Disbursed'];
+const BUR=[
+{id:'cdf',name:'Constituency Development Bursary',amt:15000,due:'2026-11-15',elig:'Needy student in secondary or tertiary school; constituency resident',docs:['National ID or birth certificate','School or college admission letter','Fee structure','Parent or guardian income proof']},
+{id:'cty',name:'County Education Fund',amt:25000,due:'2026-10-30',elig:'County resident enrolled in a recognised university or TVET college',docs:['National ID','Student ID','Fee statement','Latest transcript']},
+{id:'orp',name:'Orphans and Vulnerable Learners Grant',amt:40000,due:'2026-12-05',elig:'Orphaned or from a vulnerable household; any recognised institution',docs:['Birth certificate','Admission letter','Chief’s letter','Fee structure']},
+{id:'stem',name:'STEM Merit Bursary',amt:30000,due:'2026-09-20',elig:'Year 2 or above in a science, engineering or ICT course; mean grade B or higher',docs:['National ID','Student ID','Transcript']}];
+let APPS=[
+{no:'SB-2026-00412',name:'Faith Achieng',inst:'Kisii University',bur:'cdf',st:'Verification',score:87,fin:'HIGH',edu:'HIGH',dup:'LOW',stu:'SC211/0412/2023',docs:[['National ID','ok'],['Admission letter','ok'],['Fee structure','ok'],['Income proof','pending']],date:'2026-09-12'},
+{no:'SB-2026-00413',name:'Brian Otieno',inst:'Maseno University',bur:'cty',st:'Under Review',score:74,fin:'HIGH',edu:'MEDIUM',dup:'LOW',stu:'EB/21/0933',docs:[['National ID','ok'],['Student ID','ok'],['Fee statement','ok'],['Transcript','ok']],date:'2026-09-13'},
+{no:'SB-2026-00419',name:'Mercy Wanjiru',inst:'Nairobi Technical Institute',bur:'orp',st:'Committee Review',score:93,fin:'HIGH',edu:'HIGH',dup:'LOW',stu:'NTI/2024/118',docs:[['Birth certificate','ok'],['Admission letter','ok'],['Chief’s letter','ok'],['Fee structure','ok']],date:'2026-09-14'},
+{no:'SB-2026-00425',name:'Kevin Mwangi',inst:'Kisii University',bur:'stem',st:'Submitted',score:41,fin:'MEDIUM',edu:'HIGH',dup:'HIGH',stu:'SC211/0412/2023',docs:[['National ID','pending'],['Student ID','ok'],['Transcript','pending']],date:'2026-09-18'},
+{no:'SB-2026-00431',name:'Grace Nyaboke',inst:'Moi University',bur:'cdf',st:'Additional Information Required',score:58,fin:'MEDIUM',edu:'MEDIUM',dup:'LOW',stu:'MU/0551/22',docs:[['National ID','ok'],['Admission letter','missing'],['Fee structure','ok'],['Income proof','missing']],date:'2026-09-20'},
+{no:'SB-2026-00388',name:'Samuel Kiprop',inst:'Egerton University',bur:'cty',st:'Approved',score:81,fin:'HIGH',edu:'HIGH',dup:'LOW',stu:'EG/22/771',docs:[['National ID','ok'],['Student ID','ok'],['Fee statement','ok'],['Transcript','ok']],date:'2026-09-05'}];
+let AUDIT=[['Admin','Approved SB-2026-00388','09:42']];
+let role='applicant',view='home',selNo=null,fSt='',fQ='',step=0,trackNo='SB-2026-00412',lastSub=null;
+let form={name:'',email:'',phone:'',idno:'',inst:'',stu:'',bur:'cdf',income:'',hh:'',story:'',docs:{}};
+const $=s=>document.querySelector(s),esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const kes=n=>'KES '+Number(n).toLocaleString();
+const bur=id=>BUR.find(b=>b.id==id);
+function chipFor(st){return `<span class="chip ${st=='Approved'||st=='Disbursed'?'ok':st=='Rejected'?'bad':st.startsWith('Additional')?'warn':''}">${esc(st)}</span>`}
+function setRole(r){role=r;rA.setAttribute('aria-pressed',r=='applicant');rS.setAttribute('aria-pressed',r=='staff');go(r=='staff'?'dash':'home')}
+function go(v){view=v;render();scrollTo(0,0)}
+function nav(){const items=role=='staff'?[['dash','Dashboard'],['bur','Programs']]:[['home','Home'],['bur','Bursaries'],['apply','Apply'],['track','Track']];
+$('#nav').innerHTML=items.map(([k,l])=>`<button ${view==k?'aria-current="page"':''} onclick="go('${k}')">${l}</button>`).join('')}
+function tracker(a){if(!a)return `<p class="err">No application found with that number. Check it and try again.</p>`;
+const i=PATH.indexOf(a.st==='Rejected'?'Under Review':a.st.startsWith('Additional')?'Verification':a.st);
+return `<div class="row" style="justify-content:space-between"><b>${esc(a.no)}</b>${chipFor(a.st)}</div><small style="color:var(--mute)">${esc(bur(a.bur).name)}</small>
+<ul class="steps">${PATH.map((s,k)=>`<li class="${k<i?'done':k==i?'now':''}">${s}</li>`).join('')}</ul>
+${a.st.startsWith('Additional')?'<div class="note">We need more from you: upload the missing documents to continue.</div>':''}${a.st=='Rejected'?'<div class="note">This application was not approved. Contact the bursary office for details.</div>':''}`}
+function home(){return `<section class="hero"><div><h1>Apply for a bursary without the queue.</h1>
+<p class="lead">Fill in one application, upload your documents from your phone, and see exactly where your application stands, from submission to disbursement.</p>
+<div class="row"><button class="btn" onclick="go('apply')">Start an application</button><button class="btn ghost" onclick="go('bur')">See open bursaries</button></div>
+<p style="margin-top:22px;color:var(--mute);font-size:.92rem">Every award is decided by people. Our checks only help reviewers see which applications need attention first.</p></div>
+<div class="card"><h3>Track an application</h3><form class="row" onsubmit="event.preventDefault();trackNo=this.n.value.trim();render()"><input name="n" aria-label="Application number" value="${esc(trackNo)}" style="flex:1;min-width:150px"><button class="btn">Track</button></form>${tracker(APPS.find(a=>a.no.toLowerCase()==trackNo.toLowerCase()))}</div></section>`}
+function burList(){return `<h2>Open bursaries</h2><p style="color:var(--mute)">Check the criteria and deadline before you apply.</p><div class="grid g3">${BUR.map(b=>`<div class="card"><h3>${b.name}</h3><p><b>${kes(b.amt)}</b> per student<br>Closes ${b.due}</p><p style="font-size:.92rem;color:var(--mute)">${b.elig}</p><b style="font-size:.85rem">Documents</b><ul class="plain" style="font-size:.9rem;margin-bottom:14px">${b.docs.map(d=>`<li>${d}</li>`).join('')}</ul>${role=='staff'?'<span class="chip ok">Active</span>':`<button class="btn sm" onclick="form.bur='${b.id}';step=0;go('apply')">Apply for this</button>`}</div>`).join('')}</div>`}
+function missing(){const m=[],f=form,b=bur(f.bur);
+[['name','full name'],['email','email'],['phone','phone number'],['idno','ID number'],['inst','institution'],['stu','student number'],['income','household income'],['hh','household size']].forEach(([k,l])=>{if(!String(f[k]).trim())m.push('Add your '+l)});
+b.docs.forEach(d=>{if(!f.docs[d])m.push('Upload: '+d)});return m}
+function applyView(){
+if(lastSub){const a=lastSub;return `<div class="card" style="max-width:520px"><span class="chip ok">Submitted</span><h2 style="margin-top:10px">Application received</h2><p>Your application number is <b style="font-size:1.2rem">${a.no}</b>. Keep it to track progress. We have sent a confirmation to ${esc(form.email||'your email')}.</p>${tracker(a)}<div class="row"><button class="btn" onclick="trackNo='${a.no}';go('track')">Track application</button><button class="btn ghost" onclick="lastSub=null;form={name:'',email:'',phone:'',idno:'',inst:'',stu:'',bur:'cdf',income:'',hh:'',story:'',docs:{}};step=0;render()">Start another</button></div></div>`}
+const T=['Profile','Bursary','Documents','Review'],f=form,b=bur(f.bur);
+const inp=(k,l,t='text')=>`<div><label for="f_${k}">${l}</label><input id="f_${k}" type="${t}" value="${esc(f[k])}" oninput="form.${k}=this.value"></div>`;
+let body='';
+if(step==0)body=`<div class="grid g2">${inp('name','Full name')}${inp('email','Email','email')}${inp('phone','Phone number','tel')}${inp('idno','National ID or birth certificate no.')}${inp('inst','Institution')}${inp('stu','Student number')}${inp('income','Monthly household income (KES)','number')}${inp('hh','People in household','number')}</div><div style="margin-top:14px"><label for="f_story">Why do you need this bursary?</label><textarea id="f_story" rows="3" oninput="form.story=this.value">${esc(f.story)}</textarea></div>`;
+if(step==1)body=`<label for="bsel">Bursary program</label><select id="bsel" onchange="form.bur=this.value;form.docs={};render()">${BUR.map(x=>`<option value="${x.id}" ${x.id==f.bur?'selected':''}>${x.name}</option>`).join('')}</select><p style="margin-top:14px"><b>${kes(b.amt)}</b> · closes ${b.due}</p><p style="color:var(--mute)">Eligibility: ${b.elig}</p>`;
+if(step==2)body=`<p>Upload each required document. PDF, JPG or PNG, up to 5 MB.</p>${b.docs.map((d,i)=>`<div class="row" style="justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line)"><span>${d}</span>${f.docs[d]?`<span class="chip ok">${esc(f.docs[d])}</span>`:`<span><input type="file" id="u${i}" accept=".pdf,.jpg,.jpeg,.png" hidden onchange="fileSet('${d.replace(/'/g,"\\'")}',this)"><button class="btn ghost sm" onclick="document.getElementById('u${i}').click()">Choose file</button></span>`}</div>`).join('')}<div id="ferr"></div>`;
+if(step==3){const m=missing();body=m.length?`<h3>Before you submit</h3><p>${m.length} item${m.length>1?'s':''} still missing:</p><ul class="plain">${m.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><div class="note">Go back and complete these. You can also save a draft and finish later.</div>`:`<h3>Ready to submit</h3><p>${esc(f.name)} · ${esc(f.inst)} · ${esc(b.name)}</p><p>Our system will check for duplicate applications. A reviewer, not software, makes the final decision.</p>`}
+return `<h2>Apply</h2><div class="tabs">${T.map((t,i)=>`<span class="${i==step?'on':i<step?'ok':''}">${i+1}. ${t}</span>`).join('')}</div><div class="card">${body}<div class="row" style="margin-top:22px">${step>0?'<button class="btn ghost" onclick="step--;render()">Back</button>':''}<button class="btn ghost" onclick="draft()">Save draft</button>${step<3?'<button class="btn" onclick="step++;render()">Continue</button>':`<button class="btn" ${missing().length?'disabled style="opacity:.5;cursor:not-allowed"':''} onclick="submitApp()">Submit application</button>`}</div><div id="dmsg" style="color:var(--g);font-size:.9rem;margin-top:8px" role="status"></div></div>`}
+function fileSet(d,el){const x=el.files[0];if(!x)return;if(x.size>5*1048576){ferr.innerHTML='<p class="err">That file is over 5 MB. Choose a smaller file.</p>';return}form.docs[d]=x.name;render()}
+function draft(){dmsg.textContent='Draft saved. Your progress is kept while this page is open.'}
+function submitApp(){const dupe=APPS.some(a=>a.stu==form.stu);const n='SB-2026-'+String(450+APPS.length).padStart(5,'0');
+const a={no:n,name:form.name,inst:form.inst,bur:form.bur,st:'Submitted',score:dupe?38:Math.min(95,50+Math.round((1-Math.min(form.income/60000,1))*35)+(form.hh>4?8:0)),fin:form.income<20000?'HIGH':'MEDIUM',edu:'MEDIUM',dup:dupe?'HIGH':'LOW',stu:form.stu,docs:Object.entries(form.docs).map(([d])=>[d,'pending']),date:new Date().toISOString().slice(0,10)};
+APPS.push(a);lastSub=a;render()}
+function trackView(){return `<h2>Track your application</h2><div class="card" style="max-width:480px"><form class="row" onsubmit="event.preventDefault();trackNo=this.n.value.trim();render()"><input name="n" aria-label="Application number" value="${esc(trackNo)}" style="flex:1"><button class="btn">Track</button></form>${tracker(APPS.find(a=>a.no.toLowerCase()==trackNo.toLowerCase()))}</div><p style="color:var(--mute);margin-top:12px">Try SB-2026-00412 or SB-2026-00431.</p>`}
+function dash(){const q=fQ.toLowerCase(),L=APPS.filter(a=>(!fSt||a.st==fSt)&&(!q||(a.name+a.no+a.inst+a.stu).toLowerCase().includes(q))).sort((x,y)=>y.score-x.score);
+const c=s=>APPS.filter(a=>a.st==s).length,pend=APPS.filter(a=>['Submitted','Under Review','Verification','Additional Information Required','Committee Review'].includes(a.st)).length;
+const sel=APPS.find(a=>a.no==selNo);
+return `<h2>Applications</h2><div class="stats">${[['Total',APPS.length],['Pending',pend],['Under review',c('Under Review')],['Approved',c('Approved')],['Rejected',c('Rejected')],['Duplicate flags',APPS.filter(a=>a.dup=='HIGH').length]].map(([l,n])=>`<div class="card stat"><b>${n}</b><small>${l}</small></div>`).join('')}</div>
+<div class="row" style="margin-bottom:14px"><input aria-label="Search" placeholder="Search by name, number, institution or student no." value="${esc(fQ)}" oninput="fQ=this.value;render();document.querySelector('[aria-label=Search]').focus()" style="flex:2;min-width:200px"><select aria-label="Filter by status" onchange="fSt=this.value;render()" style="flex:1;min-width:160px"><option value="">All statuses</option>${['Submitted','Under Review','Verification','Additional Information Required','Committee Review','Approved','Rejected','Disbursed'].map(s=>`<option ${s==fSt?'selected':''}>${s}</option>`).join('')}</select></div>
+<div class="split"><div class="card tw" style="padding:6px"><table><thead><tr><th>Applicant</th><th>Program</th><th>Priority</th><th>Dup. risk</th><th>Status</th></tr></thead><tbody>${L.map(a=>`<tr tabindex="0" class="${a.no==selNo?'sel':''}" onclick="selNo='${a.no}';render()" onkeydown="if(event.key=='Enter'){selNo='${a.no}';render()}"><td><b>${esc(a.name)}</b><br><small style="color:var(--mute)">${a.no}</small></td><td>${esc(bur(a.bur).name.split(' ').slice(0,2).join(' '))}</td><td><span class="meter"><i style="width:${a.score}%"></i></span>${a.score}%</td><td><span class="chip ${a.dup=='HIGH'?'bad':'ok'}">${a.dup}</span></td><td>${chipFor(a.st)}</td></tr>`).join('')||'<tr><td colspan="5">No applications match. Clear the search or filter.</td></tr>'}</tbody></table></div>
+<div class="card" aria-live="polite">${sel?detail(sel):'<h3>Select an application</h3><p style="color:var(--mute)">Review documents, see indicators and record a recommendation.</p>'}</div></div>
+<h3 style="margin-top:28px">Audit log</h3><div class="card"><ul class="plain">${AUDIT.map(l=>`<li>${l[2]} · ${esc(l[0])} · ${esc(l[1])}</li>`).join('')}</ul></div>`}
+function detail(a){return `<h3>${esc(a.name)}</h3><p style="margin:0 0 10px;color:var(--mute)">${esc(a.inst)} · ${esc(a.stu)}</p>
+<b style="font-size:.85rem">Decision-support indicators</b><div class="row" style="margin:6px 0 10px"><span class="chip">Financial need ${a.fin}</span><span class="chip">Education need ${a.edu}</span><span class="chip ${a.dup=='HIGH'?'bad':'ok'}">Duplicate risk ${a.dup}</span></div>
+<p style="margin:0 0 6px">Priority score: <b>${a.score}%</b> ${a.score>=75?'· high priority for human review':''}</p>
+${a.dup=='HIGH'?'<div class="note">Possible duplicate: this student number matches another application. A reviewer must confirm before any action.</div>':''}
+<b style="font-size:.85rem">Documents</b><ul class="plain" style="margin-bottom:12px">${a.docs.map(d=>`<li>${esc(d[0])} <span class="chip ${d[1]=='ok'?'ok':d[1]=='missing'?'bad':'warn'}">${d[1]=='ok'?'verified':d[1]}</span></li>`).join('')}</ul>
+<div class="row"><button class="btn sm" onclick="decide('${a.no}','Approved')">Approve</button><button class="btn ghost sm" onclick="decide('${a.no}','Additional Information Required')">Request info</button><button class="btn ghost sm" onclick="decide('${a.no}','Committee Review')">Send to committee</button><button class="btn red sm" onclick="decide('${a.no}','Rejected')">Reject</button></div>`}
+function decide(no,st){const a=APPS.find(x=>x.no==no);a.st=st;AUDIT.unshift([role=='staff'?'Admin':'User',`Set ${no} to ${st}`,new Date().toTimeString().slice(0,5)]);render()}
+function render(){nav();$('#app').innerHTML=({home,bur:burList,apply:applyView,track:trackView,dash})[view]();}
+render();
+</script>
+</body>
+</html>
