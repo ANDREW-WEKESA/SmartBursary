@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, model_validator
 
 class RegisterIn(BaseModel):
     full_name: str = Field(min_length=2, max_length=160)
@@ -16,7 +16,7 @@ class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class ProfileUpdateIn(BaseModel):
-    date_of_birth: date | None = None
+    date_of_birth: date | str | None = None
     national_id: str = ""
     gender: str = ""
     county: str = ""
@@ -30,8 +30,21 @@ class ProfileUpdateIn(BaseModel):
     course: str = ""
     year_of_study: str = ""
     admission_year: int | None = None
-    monthly_household_income: int = Field(default=0, ge=0)
-    household_size: int = Field(default=1, ge=1, le=50)
+    monthly_household_income: int | None = None
+    household_size: int | None = None
+    
+    model_config = ConfigDict(populate_by_name=True)
+    
+    # Allow dates as strings in JSON
+    @classmethod
+    def parse_date_field(cls, value):
+        if isinstance(value, str):
+            for fmt in ['%Y-%m-%d', '%d/%m/%Y', '%m/%d/%Y', '%d-%m-%Y']:
+                try:
+                    return datetime.strptime(value, fmt).date()
+                except ValueError:
+                    continue
+        return value
 
 class ProfileDocumentOut(BaseModel):
     id: int; document_type: str; original_filename: str; size_bytes: int; uploaded_at: datetime

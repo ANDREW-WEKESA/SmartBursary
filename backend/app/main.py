@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from datetime import date, datetime
 from pathlib import Path
 import json, os, uuid, csv, io
-from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, Query
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy import select, or_, func
@@ -82,10 +82,41 @@ def get_profile(db: Session = Depends(get_db), user: User = Depends(current_user
     return user_with_docs
 
 @app.patch("/api/profile", response_model=ProfileOut)
-def update_profile(data: ProfileUpdateIn, db: Session = Depends(get_db), user: User = Depends(current_user)):
-    for key, value in data.model_dump(exclude_unset=True).items():
-        if value is not None or key in ["national_id", "gender", "county", "sub_county", "address", "guardian_name", "guardian_phone", "guardian_relationship", "institution", "student_number", "course", "year_of_study"]:
+def update_profile(request: Request, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    # Get raw JSON data without validation
+    try:
+        data = await request.json()
+    except:
+        data = {}
+    
+    # Handle date parsing from various formats
+    if 'date_of_birth' in data and data['date_of_birth']:
+        dob = data['date_of_birth']
+        if isinstance(dob, str):
+            for fmt in ['%Y-%m-%d', '%d/%m/%Y', '%m/%d/%Y', '%d-%m-%Y']:
+                try:
+                    data['date_of_birth'] = datetime.strptime(dob, fmt).date()
+                    break
+                except ValueError:
+                    continue
+    
+    # Map of string fields
+    string_fields = ["national_id", "gender", "county", "sub_county", "address", "guardian_name", "guardian_phone", "guardian_relationship", "institution", "student_number", "course", "year_of_study"]
+    
+    for key, value in data.items():
+        if key in string_fields:
+            setattr(user, key, value or "")
+        elif key == 'date_of_birth':
             setattr(user, key, value)
+        elif key == 'admission_year':
+            if isinstance(value, int) and value > 0:
+                setattr(user, key, value)
+        elif key in ['monthly_household_income', 'household_size']:
+            if value is not None:
+                try:
+                    setattr(user, key, int(value))
+                except (ValueError, TypeError):
+                    pass
     
     # Check if profile is complete
     required_fields = [
