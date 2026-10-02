@@ -12,7 +12,40 @@ class LoginIn(BaseModel):
     password: str
 
 class UserOut(BaseModel):
-    id: int; full_name: str; email: EmailStr; phone: str; role: str
+    id: int; full_name: str; email: EmailStr; phone: str; role: str; profile_complete: bool
+    model_config = ConfigDict(from_attributes=True)
+
+class ProfileUpdateIn(BaseModel):
+    date_of_birth: date | None = None
+    national_id: str = ""
+    gender: str = ""
+    county: str = ""
+    sub_county: str = ""
+    address: str = ""
+    guardian_name: str = ""
+    guardian_phone: str = ""
+    guardian_relationship: str = ""
+    institution: str = ""
+    student_number: str = ""
+    course: str = ""
+    year_of_study: str = ""
+    admission_year: int | None = None
+    monthly_household_income: int = Field(default=0, ge=0)
+    household_size: int = Field(default=1, ge=1, le=50)
+
+class ProfileDocumentOut(BaseModel):
+    id: int; document_type: str; original_filename: str; size_bytes: int; uploaded_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+class ProfileOut(BaseModel):
+    id: int; full_name: str; email: EmailStr; phone: str
+    profile_complete: bool
+    date_of_birth: date | None; national_id: str; gender: str; county: str; sub_county: str; address: str
+    guardian_name: str; guardian_phone: str; guardian_relationship: str
+    institution: str; student_number: str; course: str; year_of_study: str; admission_year: int | None
+    monthly_household_income: int; household_size: int
+    has_national_id_doc: bool; has_student_id_doc: bool; has_admission_letter: bool
+    profile_documents: list[ProfileDocumentOut]
     model_config = ConfigDict(from_attributes=True)
 
 class TokenOut(BaseModel):

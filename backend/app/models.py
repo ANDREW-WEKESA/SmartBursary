@@ -12,8 +12,33 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255))
     role: Mapped[str] = mapped_column(String(30), default="applicant")
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Profile fields
+    profile_complete: Mapped[bool] = mapped_column(Boolean, default=False)
+    date_of_birth: Mapped[date | None] = mapped_column(Date, nullable=True)
+    national_id: Mapped[str] = mapped_column(String(100), default="")
+    gender: Mapped[str] = mapped_column(String(20), default="")
+    county: Mapped[str] = mapped_column(String(100), default="")
+    sub_county: Mapped[str] = mapped_column(String(100), default="")
+    address: Mapped[str] = mapped_column(Text, default="")
+    guardian_name: Mapped[str] = mapped_column(String(160), default="")
+    guardian_phone: Mapped[str] = mapped_column(String(40), default="")
+    guardian_relationship: Mapped[str] = mapped_column(String(50), default="")
+    # Educational details
+    institution: Mapped[str] = mapped_column(String(180), default="")
+    student_number: Mapped[str] = mapped_column(String(100), default="")
+    course: Mapped[str] = mapped_column(String(180), default="")
+    year_of_study: Mapped[str] = mapped_column(String(40), default="")
+    admission_year: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Financial information
+    monthly_household_income: Mapped[int] = mapped_column(Integer, default=0)
+    household_size: Mapped[int] = mapped_column(Integer, default=1)
+    # Profile documents
+    has_national_id_doc: Mapped[bool] = mapped_column(Boolean, default=False)
+    has_student_id_doc: Mapped[bool] = mapped_column(Boolean, default=False)
+    has_admission_letter: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     applications: Mapped[list["Application"]] = relationship(back_populates="applicant")
+    profile_documents: Mapped[list["ProfileDocument"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
 class Bursary(Base):
     __tablename__ = "bursaries"
@@ -66,6 +91,18 @@ class Document(Base):
     verification_status: Mapped[str] = mapped_column(String(30), default="Pending")
     uploaded_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     application: Mapped[Application] = relationship(back_populates="documents")
+
+class ProfileDocument(Base):
+    __tablename__ = "profile_documents"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    document_type: Mapped[str] = mapped_column(String(180))
+    original_filename: Mapped[str] = mapped_column(String(255))
+    stored_filename: Mapped[str] = mapped_column(String(255), unique=True)
+    content_type: Mapped[str] = mapped_column(String(120), default="application/octet-stream")
+    size_bytes: Mapped[int] = mapped_column(Integer, default=0)
+    uploaded_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    user: Mapped[User] = relationship(back_populates="profile_documents")
 
 class AuditLog(Base):
     __tablename__ = "audit_logs"

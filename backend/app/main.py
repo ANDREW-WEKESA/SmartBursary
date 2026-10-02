@@ -9,8 +9,8 @@ from sqlalchemy import select, or_, func
 from sqlalchemy.orm import Session, joinedload
 from .config import settings
 from .database import Base, engine, get_db, SessionLocal
-from .models import User, Bursary, Application, Document, AuditLog, Notification
-from .schemas import RegisterIn, LoginIn, TokenOut, UserOut, StaffUserIn, BursaryIn, BursaryOut, ApplicationIn, ApplicationOut, StatusIn, DocumentOut
+from .models import User, Bursary, Application, Document, AuditLog, Notification, ProfileDocument
+from .schemas import RegisterIn, LoginIn, TokenOut, UserOut, StaffUserIn, BursaryIn, BursaryOut, ApplicationIn, ApplicationOut, StatusIn, DocumentOut, ProfileUpdateIn, ProfileOut, ProfileDocumentOut
 from .security import hash_password, verify_password, create_token, current_user, require_roles
 
 STATUSES = {"Submitted", "Under Review", "Verification", "Additional Information Required", "Committee Review", "Approved", "Rejected", "Disbursed"}
@@ -35,7 +35,7 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(title=settings.app_name, version="1.0.0", description="SmartBursary applications, review and tracking API", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5174","http://127.0.0.1:5174"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5174","http://127.0.0.1:5174","http://localhost:5175","http://127.0.0.1:5175","http://localhost:5173","http://127.0.0.1:5173"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 def audit(db: Session, actor: User | None, action: str, entity_type="", entity_id="", details=""):
     db.add(AuditLog(actor_id=actor.id if actor else None, actor_name=actor.full_name if actor else "System", action=action, entity_type=entity_type, entity_id=str(entity_id), details=details))
@@ -76,6 +76,132 @@ def login(data: LoginIn, db: Session = Depends(get_db)):
 @app.get("/api/auth/me", response_model=UserOut)
 def me(user: User = Depends(current_user)): return user
 
+@app.get("/api/profile", response_model=ProfileOut)
+def get_profile(db: Session = Depends(get_db), user: User = Depends(current_user)):
+    user_with_docs = db.scalars(select(User).options(joinedload(User.profile_documents)).where(User.id == user.id)).unique().first()
+    return user_with_docs
+
+@app.patch("/api/profile", response_model=ProfileOut)
+def update_profile(data: ProfileUpdateIn, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    for key, value in data.model_dump(exclude_unset=True).items():
+        if value is not None or key in ["national_id", "gender", "county", "sub_county", "address", "guardian_name", "guardian_phone", "guardian_relationship", "institution", "student_number", "course", "year_of_study"]:
+            setattr(user, key, value)
+    
+    # Check if profile is complete
+    required_fields = [
+        user.date_of_birth is not None,
+        bool(user.national_id.strip()),
+        bool(user.gender.strip()),
+        bool(user.county.strip()),
+        bool(user.institution.strip()),
+        bool(user.student_number.strip()),
+        bool(user.course.strip()),
+        bool(user.year_of_study.strip()),
+        user.monthly_household_income > 0,
+        user.household_size > 0,
+        user.has_national_id_doc,
+        user.has_student_id_doc
+    ]
+    user.profile_complete = all(required_fields)
+    
+    audit(db, user, "Updated profile", "User", user.id)
+    db.commit()
+    user_with_docs = db.scalars(select(User).options(joinedload(User.profile_documents)).where(User.id == user.id)).unique().first()
+    return user_with_docs
+
+@app.post("/api/profile/documents", response_model=ProfileDocumentOut, status_code=201)
+async def upload_profile_document(document_type: str = Form(...), file: UploadFile = File(...), db: Session = Depends(get_db), user: User = Depends(current_user)):
+    if document_type not in ["National ID", "Student ID", "Admission Letter", "Birth Certificate", "Transcript"]:
+        raise HTTPException(400, "Invalid document type")
+    
+    suffix = Path(file.filename or "").suffix.lower()
+    if suffix not in ALLOWED_EXT:
+        raise HTTPException(400, "Only PDF, JPG and PNG files are accepted")
+    
+    content = await file.read(settings.max_upload_mb * 1024 * 1024 + 1)
+    if not content:
+        raise HTTPException(400, "The selected file is empty")
+    if len(content) > settings.max_upload_mb * 1024 * 1024:
+        raise HTTPException(413, f"File exceeds {settings.max_upload_mb} MB")
+    
+    # Delete existing document of same type
+    existing = db.scalars(select(ProfileDocument).where(
+        ProfileDocument.user_id == user.id,
+        ProfileDocument.document_type == document_type
+    )).first()
+    if existing:
+        old_path = Path(settings.upload_dir) / existing.stored_filename
+        if old_path.exists():
+            old_path.unlink()
+        db.delete(existing)
+    
+    stored = f"profile_{uuid.uuid4().hex}{suffix}"
+    folder = Path(settings.upload_dir)
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / stored).write_bytes(content)
+    
+    doc = ProfileDocument(
+        user_id=user.id,
+        document_type=document_type,
+        original_filename=Path(file.filename or "upload").name[:255],
+        stored_filename=stored,
+        content_type=file.content_type or "application/octet-stream",
+        size_bytes=len(content)
+    )
+    db.add(doc)
+    
+    # Update document flags
+    if document_type == "National ID":
+        user.has_national_id_doc = True
+    elif document_type == "Student ID":
+        user.has_student_id_doc = True
+    elif document_type == "Admission Letter":
+        user.has_admission_letter = True
+    
+    audit(db, user, f"Uploaded profile document: {document_type}", "ProfileDocument", doc.id)
+    db.commit()
+    db.refresh(doc)
+    return doc
+
+@app.get("/api/profile/documents/{document_id}/download")
+def download_profile_document(document_id: int, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    doc = db.get(ProfileDocument, document_id)
+    if not doc:
+        raise HTTPException(404, "Document not found")
+    if doc.user_id != user.id and user.role not in ["admin", "reviewer"]:
+        raise HTTPException(403, "You cannot access this document")
+    
+    path = Path(settings.upload_dir) / doc.stored_filename
+    if not path.exists():
+        raise HTTPException(404, "File is missing from storage")
+    return FileResponse(path, filename=doc.original_filename, media_type=doc.content_type)
+
+@app.delete("/api/profile/documents/{document_id}")
+def delete_profile_document(document_id: int, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    doc = db.get(ProfileDocument, document_id)
+    if not doc:
+        raise HTTPException(404, "Document not found")
+    if doc.user_id != user.id:
+        raise HTTPException(403, "You can only delete your own documents")
+    
+    # Update document flags
+    if doc.document_type == "National ID":
+        user.has_national_id_doc = False
+    elif doc.document_type == "Student ID":
+        user.has_student_id_doc = False
+    elif doc.document_type == "Admission Letter":
+        user.has_admission_letter = False
+    
+    # Delete file from storage
+    path = Path(settings.upload_dir) / doc.stored_filename
+    if path.exists():
+        path.unlink()
+    
+    audit(db, user, f"Deleted profile document: {doc.document_type}", "ProfileDocument", doc.id)
+    db.delete(doc)
+    db.commit()
+    return {"ok": True}
+
 @app.post("/api/admin/users", response_model=UserOut, status_code=201)
 def create_staff_user(data: StaffUserIn, db: Session = Depends(get_db), user: User = Depends(require_roles("admin"))):
     email = str(data.email).lower()
@@ -106,15 +232,29 @@ def update_bursary(bursary_id:int,data:BursaryIn,db:Session=Depends(get_db),user
 
 @app.post("/api/applications", response_model=ApplicationOut, status_code=201)
 def submit_application(data:ApplicationIn,db:Session=Depends(get_db),user:User=Depends(current_user)):
+    # Check if profile is complete
+    if not user.profile_complete:
+        raise HTTPException(403, "Please complete your profile before applying for bursaries")
+    
     b=db.get(Bursary,data.bursary_id)
     if not b or not b.active: raise HTTPException(404,"Active bursary not found")
     if b.deadline < date.today(): raise HTTPException(400,"The deadline for this bursary has passed")
-    duplicate = db.scalar(select(Application.id).where(or_(Application.student_number==data.student_number, (Application.national_id==data.national_id) if data.national_id else False)).limit(1)) is not None
-    score,fin,dup=priority(data.monthly_household_income,data.household_size,duplicate)
+    
+    # Use profile data if not provided in application
+    institution = data.institution.strip() or user.institution
+    student_number = data.student_number.strip() or user.student_number
+    national_id = data.national_id.strip() or user.national_id
+    course = data.course.strip() or user.course
+    year_of_study = data.year_of_study.strip() or user.year_of_study
+    monthly_household_income = data.monthly_household_income if data.monthly_household_income > 0 else user.monthly_household_income
+    household_size = data.household_size if data.household_size > 1 else user.household_size
+    
+    duplicate = db.scalar(select(Application.id).where(or_(Application.student_number==student_number, (Application.national_id==national_id) if national_id else False)).limit(1)) is not None
+    score,fin,dup=priority(monthly_household_income,household_size,duplicate)
     count=db.scalar(select(func.count(Application.id))) or 0
     number=f"SB-{datetime.now().year}-{count+1:05d}"
     while db.scalar(select(Application.id).where(Application.application_number==number)): number=f"SB-{datetime.now().year}-{uuid.uuid4().hex[:6].upper()}"
-    a=Application(application_number=number,applicant_id=user.id,bursary_id=b.id,institution=data.institution.strip(),student_number=data.student_number.strip(),national_id=data.national_id.strip(),monthly_household_income=data.monthly_household_income,household_size=data.household_size,course=data.course.strip(),year_of_study=data.year_of_study.strip(),reason=data.reason.strip(),priority_score=score,financial_need=fin,duplicate_risk=dup)
+    a=Application(application_number=number,applicant_id=user.id,bursary_id=b.id,institution=institution,student_number=student_number,national_id=national_id,monthly_household_income=monthly_household_income,household_size=household_size,course=course,year_of_study=year_of_study,reason=data.reason.strip(),priority_score=score,financial_need=fin,duplicate_risk=dup)
     db.add(a);db.flush();db.add(Notification(user_id=user.id,title="Application submitted",message=f"Your application {number} has been submitted."));audit(db,user,"Submitted application","Application",a.id,number);db.commit()
     a=db.scalars(app_query(db).where(Application.id==a.id)).unique().first();return application_out(a)
 
