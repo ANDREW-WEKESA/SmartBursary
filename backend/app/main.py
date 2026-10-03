@@ -378,8 +378,11 @@ def list_bursaries(include_inactive: bool = False, constituency: str = "", searc
     # Applicants can VIEW all bursaries (no filtering) for transparency
     # But they can only APPLY to their constituency (enforced in create_application)
     
-    # Allow admin/reviewer to filter manually
-    if constituency.strip():
+    # Auto-filter for constituency admins and reviewers
+    if user.constituency and user.role in ("admin", "reviewer"):
+        q = q.where(Bursary.constituency == user.constituency)
+    # Allow manual constituency filter for super admin
+    elif constituency.strip():
         q = q.where(Bursary.constituency.ilike(f"%{constituency.strip()}%"))
     
     if search.strip():
@@ -395,6 +398,9 @@ def get_constituencies(db: Session = Depends(get_db)):
 
 @app.post("/api/bursaries", response_model=BursaryOut, status_code=201)
 def create_bursary(data: BursaryIn, db: Session = Depends(get_db), user: User = Depends(require_roles("admin"))):
+    # Constituency admins can only create bursaries for their constituency
+    if user.constituency and data.constituency != user.constituency:
+        raise HTTPException(403, "You can only create bursaries for your constituency")
     if db.scalar(select(Bursary.id).where(Bursary.name == data.name)): raise HTTPException(409,"A bursary with this name already exists")
     b=Bursary(name=data.name,description=data.description,eligibility=data.eligibility,amount_kes=data.amount_kes,show_amount=data.show_amount,deadline=data.deadline,required_documents=json.dumps(data.required_documents),active=data.active,constituency=data.constituency)
     db.add(b);db.flush();audit(db,user,"Created bursary","Bursary",b.id,b.name);db.commit();db.refresh(b);return bursary_out(b)
@@ -403,6 +409,9 @@ def create_bursary(data: BursaryIn, db: Session = Depends(get_db), user: User = 
 def update_bursary(bursary_id:int,data:BursaryIn,db:Session=Depends(get_db),user:User=Depends(require_roles("admin"))):
     b=db.get(Bursary,bursary_id)
     if not b: raise HTTPException(404,"Bursary not found")
+    # Constituency admins can only update bursaries from their constituency
+    if user.constituency and b.constituency != user.constituency:
+        raise HTTPException(403, "You can only update bursaries from your constituency")
     for k,v in data.model_dump().items(): setattr(b,k,json.dumps(v) if k=="required_documents" else v)
     audit(db,user,"Updated bursary","Bursary",b.id,b.name);db.commit();db.refresh(b);return bursary_out(b)
 
@@ -410,6 +419,9 @@ def update_bursary(bursary_id:int,data:BursaryIn,db:Session=Depends(get_db),user
 def toggle_bursary(bursary_id: int, db: Session = Depends(get_db), user: User = Depends(require_roles("admin"))):
     b = db.get(Bursary, bursary_id)
     if not b: raise HTTPException(404, "Bursary not found")
+    # Constituency admins can only toggle bursaries from their constituency
+    if user.constituency and b.constituency != user.constituency:
+        raise HTTPException(403, "You can only toggle bursaries from your constituency")
     b.active = not b.active
     action = "Opened" if b.active else "Closed"
     audit(db, user, f"{action} bursary applications", "Bursary", b.id, b.name)
@@ -515,8 +527,8 @@ def submit_application(data:ApplicationIn,db:Session=Depends(get_db),user:User=D
 def list_applications(q:str="",status_filter:str="",db:Session=Depends(get_db),user:User=Depends(current_user)):
     query=app_query(db)
     if user.role == "applicant": query=query.where(Application.applicant_id==user.id)
-    # Filter by constituency for reviewers
-    elif user.role == "reviewer" and user.constituency:
+    # Filter by constituency for reviewers and constituency admins
+    elif user.constituency and user.role in ("reviewer", "admin"):
         query = query.join(Application.bursary).where(Bursary.constituency == user.constituency)
     if status_filter: query=query.where(Application.status==status_filter)
     if q.strip():
@@ -528,6 +540,9 @@ def get_application(application_number:str,db:Session=Depends(get_db),user:User=
     a=db.scalars(app_query(db).where(Application.application_number==application_number)).unique().first()
     if not a: raise HTTPException(404,"Application not found")
     if user.role=="applicant" and a.applicant_id!=user.id: raise HTTPException(403,"You can only view your own applications")
+    # Constituency admins and reviewers can only view applications from their constituency
+    if user.constituency and user.role in ("admin", "reviewer") and a.bursary.constituency != user.constituency:
+        raise HTTPException(403, "You can only view applications from your constituency")
     return application_out(a)
 
 @app.patch("/api/applications/{application_number}/status", response_model=ApplicationOut)
@@ -535,6 +550,9 @@ def update_status(application_number:str,data:StatusIn,db:Session=Depends(get_db
     if data.status not in STATUSES: raise HTTPException(400,"Unsupported application status")
     a=db.scalars(app_query(db).where(Application.application_number==application_number)).unique().first()
     if not a: raise HTTPException(404,"Application not found")
+    # Constituency admins and reviewers can only update applications from their constituency
+    if user.constituency and user.role in ("admin", "reviewer") and a.bursary.constituency != user.constituency:
+        raise HTTPException(403, "You can only update applications from your constituency")
     old=a.status;a.status=data.status;a.reviewer_comment=data.reviewer_comment
     db.add(Notification(user_id=a.applicant_id,title="Application status updated",message=f"{a.application_number}: {old} → {a.status}"));audit(db,user,f"Changed status from {old} to {a.status}","Application",a.id,data.reviewer_comment);db.commit()
     
