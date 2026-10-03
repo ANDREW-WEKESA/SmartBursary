@@ -248,11 +248,11 @@ def list_bursaries(include_inactive: bool = False, constituency: str = "", searc
     q = select(Bursary).order_by(Bursary.deadline)
     if not include_inactive or user.role == "applicant": q = q.where(Bursary.active.is_(True))
     
-    # Filter by user's constituency for applicants
-    if user.role == "applicant" and user.constituency:
-        q = q.where(Bursary.constituency == user.constituency)
+    # Applicants can VIEW all bursaries (no filtering) for transparency
+    # But they can only APPLY to their constituency (enforced in create_application)
+    
     # Allow admin/reviewer to filter manually
-    elif constituency.strip():
+    if constituency.strip():
         q = q.where(Bursary.constituency.ilike(f"%{constituency.strip()}%"))
     
     if search.strip():
@@ -327,6 +327,11 @@ def submit_application(data:ApplicationIn,db:Session=Depends(get_db),user:User=D
     b=db.get(Bursary,data.bursary_id)
     if not b or not b.active: raise HTTPException(404,"Active bursary not found")
     if b.deadline < date.today(): raise HTTPException(400,"The deadline for this bursary has passed")
+    
+    # Constituency eligibility check: applicants can only apply to their home constituency
+    if user.role == "applicant" and user.constituency and b.constituency:
+        if user.constituency != b.constituency:
+            raise HTTPException(403, f"You can only apply to bursaries in your home constituency ({user.constituency}). This bursary is for {b.constituency}.")
     
     # Use profile data if not provided in application
     institution = data.institution.strip() or user.institution

@@ -56,3 +56,71 @@
 
 .constituency-banner{background:#edf5f0;border:1px solid#d4e6db;color:#2c5440;border-radius:12px;padding:14px 17px;margin-bottom:20px;display:flex;align-items:center;gap:11px;font-size:.88rem}.constituency-banner b{color:#0e6b4a}
 :root[data-theme="dark"] .constituency-banner{background:#1a2f25;border-color:#2d4d3c;color:#b8d9c6}
+
+/* Constituency eligibility styling */
+.program-card.ineligible {
+  opacity: 0.7;
+}
+
+.constituency-badge.ineligible {
+  background: #fbe4e1;
+  color: #a62922;
+  border: 1px solid #f0c9c5;
+}
+
+.constituency-badge.eligible {
+  background: #ddf0e6;
+  color: #0e6b4a;
+  border: 1px solid #c4e1d0;
+}
+
+.constituency-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.73rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.constituency-badge small {
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+.constituency-banner {
+  background: #ddf0e6;
+  border: 1px solid #c4e1d0;
+  border-radius: 12px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  color: #0e6b4a;
+  font-size: 0.88rem;
+  margin-bottom: 20px;
+}
+
+.constituency-banner b {
+  font-weight: 800;
+}
+
+:root[data-theme="dark"] .constituency-badge.eligible {
+  background: #17372a;
+  border-color: #2b5b43;
+  color: #76dbab;
+}
+
+:root[data-theme="dark"] .constituency-badge.ineligible {
+  background: #3d1d1a;
+  border-color: #63312b;
+  color: #ff8a80;
+}
+
+:root[data-theme="dark"] .constituency-banner {
+  background: #17372a;
+  border-color: #2b5b43;
+  color: #76dbab;
+}
