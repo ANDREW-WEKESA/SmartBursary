@@ -1,0 +1,36 @@
+{
+  "id": "FEAT-003",
+  "type": "feat",
+  "description": "Enhanced Filters and Sorting for Applications page: add bursary filter dropdown, sort dropdown (Newest/Oldest/Amount/Priority), constituency filter for admin, Clear filters button; implement sorting logic in existing filtered useMemo; persist filter state in localStorage when navigating away and back",
+  "status": "pending",
+  "steps": [
+    "Frontend: In frontend/src/App.jsx, locate ApplicationsPage component (around line 640). Current toolbar has searchbox and status filter selectbox. Add state at component top: `const [bursaryFilter,setBursaryFilter]=useState(''); const [sortBy,setSortBy]=useState('newest'); const [constituencyFilter,setConstituencyFilter]=useState('')`. Load from localStorage on mount: `useEffect(()=>{const saved=localStorage.getItem('appFilters');if(saved){const f=JSON.parse(saved);setFilter(f.status||'');setBursaryFilter(f.bursary||'');setSortBy(f.sort||'newest');setConstituencyFilter(f.constituency||'')}},[])`. Save to localStorage when filters change: `useEffect(()=>{localStorage.setItem('appFilters',JSON.stringify({status:filter,bursary:bursaryFilter,sort:sortBy,constituency:constituencyFilter}))},[filter,bursaryFilter,sortBy,constituencyFilter])`",
+    "ApplicationsPage toolbar: After existing searchbox and status selectbox, add bursary filter dropdown. Pattern: `<div className=\"selectbox\"><GraduationCap size={17}/><select value={bursaryFilter} onChange={e=>setBursaryFilter(e.target.value)}><option value=\"\">All bursaries</option>{bursaries.map(b=><option key={b.id} value={String(b.id)}>{b.name}</option>)}</select></div>`. Need to pass bursaries prop from parent App component: find where ApplicationsPage is called (line ~32 in main App component) and add bursaries={bursaries} prop. Update ApplicationsPage function signature to accept bursaries prop",
+    "ApplicationsPage toolbar: Add sort dropdown after bursary filter: `<div className=\"selectbox\"><ArrowDownToLine size={17}/><select value={sortBy} onChange={e=>setSortBy(e.target.value)}><option value=\"newest\">Newest first</option><option value=\"oldest\">Oldest first</option><option value=\"amount-high\">Amount high-low</option><option value=\"priority-high\">Priority score high-low</option></select></div>`. Add constituency filter for admin only: `{staff&&user.role==='admin'&&<div className=\"selectbox\"><MapPin size={17}/><select value={constituencyFilter} onChange={e=>setConstituencyFilter(e.target.value)}><option value=\"\">All constituencies</option>{/* Get unique constituencies from applications */}{[...new Set(applications.map(a=>a.bursary_name))].map(c=><option key={c}>{c}</option>)}</select></div>}`. Add Clear filters button: `{(filter||bursaryFilter||sortBy!=='newest'||constituencyFilter)&&<Button kind=\"ghost\" size=\"small\" onClick={()=>{setFilter('');setBursaryFilter('');setSortBy('newest');setConstituencyFilter('')}}><X size={14}/> Clear filters</Button>}`",
+    "ApplicationsPage: Modify existing filtered useMemo (around line 69 in main App) to include new filters and sorting. Current: `const filtered=useMemo(()=>applications.filter(a=>(!filter||a.status===filter)&&(!query||[a.application_number,a.applicant_name,a.institution,a.student_number,a.bursary_name].join(' ').toLowerCase().includes(query.toLowerCase()))),[applications,filter,query])`. Extend to: add bursaryFilter check `&&(!bursaryFilter||String(a.bursary_id)===bursaryFilter)`, add constituencyFilter check (need to get constituency from bursary, may need to enhance ApplicationOut schema or filter by bursary name pattern). After filtering, add sorting: `.sort((a,b)=>{if(sortBy==='newest')return new Date(b.submitted_at)-new Date(a.submitted_at);if(sortBy==='oldest')return new Date(a.submitted_at)-new Date(b.submitted_at);if(sortBy==='amount-high')return b.amount_kes-a.amount_kes;if(sortBy==='priority-high')return b.priority_score-a.priority_score;return 0})`",
+    "Update main App component where ApplicationsPage is called for staff (around line 32): change from `<ApplicationsPage items={filtered} staff query={query} setQuery={setQuery} filter={filter} setFilter={setFilter} go={navigate} onSelect={...}/>` to include new props: `bursaries={bursaries} bursaryFilter={bursaryFilter} setBursaryFilter={setBursaryFilter} sortBy={sortBy} setSortBy={setSortBy} constituencyFilter={constituencyFilter} setConstituencyFilter={setConstituencyFilter}`. OR: move filtered useMemo logic inside ApplicationsPage and pass applications array instead of filtered - this is cleaner. Choose second approach: keep all filter state inside ApplicationsPage, receive full applications array",
+    "Refactor: Move the filtered useMemo from main App into ApplicationsPage component. Update ApplicationsPage function signature to: `function ApplicationsPage({items:applications,staff,bursaries,go,onSelect})`. Inside ApplicationsPage, declare all filter states (query, filter, bursaryFilter, sortBy, constituencyFilter) and create filtered useMemo with full logic including sorting. This keeps filter state encapsulated in ApplicationsPage. Update toolbar to include all 5 filter controls (search, status, bursary, sort, constituency, clear). Test navigation away and back to verify localStorage persistence works"
+  ],
+  "acceptance_criteria": [
+    "Applications page toolbar shows 5 filter controls: search query, status filter, bursary filter, sort dropdown, constituency filter (admin only), and Clear filters button",
+    "Bursary filter dropdown lists all bursaries; filtering works correctly",
+    "Sort dropdown has 4 options: Newest first (default), Oldest first, Amount high-low, Priority score high-low; sorting applies to filtered results",
+    "Constituency filter appears only for admin role; lists all unique constituencies from applications",
+    "Clear filters button appears when any non-default filter is active; clicking resets all filters to defaults",
+    "Filter state persists in localStorage; navigating away from Applications page and back restores previous filter selections"
+  ],
+  "verification": [
+    "Start backend and frontend as in previous features",
+    "Sign in as admin@smartbursary.com",
+    "Navigate to Applications page",
+    "Verify toolbar shows search box, status dropdown, bursary dropdown (populated with bursary names), sort dropdown (4 options), constituency dropdown (shows for admin), and Clear filters button (appears when filters active)",
+    "Test each filter individually: select a bursary, verify only applications for that bursary show; select a status, verify filtering works; change sort order, verify table reorders",
+    "Set multiple filters, verify they work together (AND logic)",
+    "Click Clear filters button, verify all filters reset to defaults",
+    "Set filters, navigate to Dashboard, return to Applications page, verify filters are restored from localStorage",
+    "Sign in as reviewer (non-admin), verify constituency filter does NOT appear",
+    "Sign in as applicant, verify Applications page shows only their applications (existing behavior maintained)"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

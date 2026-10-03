@@ -1,0 +1,35 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Reports and Analytics Dashboard: new backend endpoint /api/reports/overview returning aggregated stats (total applications, counts by status/constituency/bursary with amounts); new frontend ReportsPage component with summary cards, tables for Applications by Constituency/Status/Bursary using existing styling patterns and simple HTML/CSS progress bars (no external chart libraries)",
+  "status": "pending",
+  "steps": [
+    "Backend: In backend/app/main.py, add new endpoint after existing /api/reports/applications.csv endpoint (around line 599). Create `@app.get(\"/api/reports/overview\")` with `user: User = Depends(require_roles(\"admin\",\"reviewer\"))`. Query database for: total_applications = db.scalar(select(func.count(Application.id))), approved_count (status='Approved'), rejected_count (status='Rejected'), pending_count (not in Approved/Rejected/Disbursed), disbursed_count (status='Disbursed'). For breakdown by constituency: query `db.execute(select(Bursary.constituency, func.count(Application.id).label('total_apps'), func.sum(case((Application.status=='Approved',1),else_=0)).label('approved'), func.sum(case((Application.status=='Disbursed',Application.bursary.amount_kes),else_=0)).label('total_amount')).join(Application.bursary).group_by(Bursary.constituency)).all()`. Return JSON with structure: `{\"total_applications\": int, \"approved\": int, \"rejected\": int, \"pending\": int, \"disbursed\": int, \"by_constituency\": [{\"name\": str, \"total_apps\": int, \"approved\": int, \"pending\": int, \"disbursed\": int, \"total_amount\": int}], \"by_status\": [{\"status\": str, \"count\": int}], \"by_bursary\": [{\"bursary_name\": str, \"total_apps\": int, \"approved\": int, \"avg_amount\": float}]}`",
+    "Frontend: In frontend/src/App.jsx, locate the existing ReportsPage component (around line 1180). This component currently shows only 4 stat cards and a status summary with CSV export. Replace the entire component body with: PageHeading (eyebrow='ANALYTICS DASHBOARD', title='Reports & Analytics', desc='Overview of application metrics and allocation tracking', action=CSV export button). Add state: `const [overview,setOverview]=useState(null)`. Add useEffect to fetch on mount: `useEffect(()=>{loadOverview()},[])` with `async function loadOverview(){try{const data=await api('/reports/overview');setOverview(data)}catch(e){console.error(e)}}`. Display loading state if !overview. Render summary cards: Total Applications (overview.total_applications, green), Approval Rate % (Math.round(overview.approved/(overview.total_applications||1)*100), blue), Total Disbursed Amount (money(overview.by_constituency.reduce((sum,c)=>sum+c.total_amount,0)), purple), Pending Review (overview.pending, amber)",
+    "Continue ReportsPage: Add table 'Applications by Constituency' in a panel.table-panel. Use existing table markup pattern from ApplicationsPage. Columns: Constituency, Total Applications, Approved, Pending, Approval Rate %. Map over overview.by_constituency array. Calculate approval_rate as Math.round(c.approved/c.total_apps*100). Show simple progress bar using existing .bar-track/.bar-track i pattern from Dashboard (see line ~1150): `<div className=\"bar-track\"><i style={{width: approval_rate+'%'}}/></div>`",
+    "Continue ReportsPage: Add second table 'Applications by Status' showing overview.by_status entries. Columns: Status, Count, Percentage. Calculate percentage as Math.round(s.count/overview.total_applications*100). Include inline progress bar similar to constituency table. Add third table 'Applications by Bursary' showing overview.by_bursary entries. Columns: Bursary Name, Total Applications, Approved, Average Amount. Display avg_amount using money() formatter",
+    "Verification: ensure ReportsPage is already in staff navigation (line ~67: `['reports','Reports',ArrowDownToLine]`). Test by signing in as admin, clicking Reports in sidebar. Should see 4 summary cards, 3 tables with real data from database, no external chart libraries used (only CSS progress bars). Verify CSV export button still works from existing implementation"
+  ],
+  "acceptance_criteria": [
+    "Backend endpoint /api/reports/overview returns JSON with total_applications, approved, rejected, pending, disbursed counts; by_constituency array with name/total_apps/approved/pending/disbursed/total_amount; by_status array with status/count; by_bursary array with bursary_name/total_apps/approved/avg_amount",
+    "Frontend ReportsPage displays 4 summary cards: Total Applications, Approval Rate %, Total Disbursed Amount, Pending Review count",
+    "ReportsPage shows table 'Applications by Constituency' with columns: name, total, approved, pending, approval rate %, and inline CSS progress bars",
+    "ReportsPage shows table 'Applications by Status' with status name, count, percentage, and progress bars",
+    "ReportsPage shows table 'Applications by Bursary' with bursary name, total apps, approved count, average amount",
+    "No external chart libraries added; uses existing HTML/CSS progress bars (.bar-track pattern from Dashboard)"
+  ],
+  "verification": [
+    "Start backend: cd backend && .venv/Scripts/Activate.ps1 && uvicorn app.main:app --reload --port 8000",
+    "Test backend endpoint directly: open http://127.0.0.1:8000/docs, authorize as admin, execute GET /api/reports/overview, verify JSON structure matches specification",
+    "Start frontend: cd frontend && npm run dev",
+    "Sign in as admin@smartbursary.com (password from .env, default ChangeMe123!)",
+    "Click Reports in sidebar navigation",
+    "Verify 4 stat cards appear at top with real numbers from database",
+    "Verify table 'Applications by Constituency' appears with data rows and progress bars showing approval rates",
+    "Verify table 'Applications by Status' shows all statuses with counts and percentages",
+    "Verify table 'Applications by Bursary' shows bursary names with application counts and amounts",
+    "Verify CSV export button still works (downloads smartbursary-applications.csv)"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

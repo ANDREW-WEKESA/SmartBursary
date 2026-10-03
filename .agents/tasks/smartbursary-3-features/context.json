@@ -1,0 +1,22 @@
+{
+  "project_type": "FastAPI backend + React/Vite frontend; SQLite database with SQLAlchemy ORM",
+  "language": "Python 3 (backend), JavaScript/JSX (frontend)",
+  "build_system": "npm for frontend, pip/venv for backend",
+  "test_framework": "Manual testing via browser and API endpoints (no automated test suite present)",
+  "build_command": "Frontend: npm run dev (dev server at localhost:5173); Backend: uvicorn app.main:app --reload --port 8000",
+  "test_command": "Manual: start both servers, test in browser. Backend: http://127.0.0.1:8000/api/health. Frontend: http://localhost:5173",
+  "verification_instructions": "Start backend (cd backend && .venv/Scripts/Activate.ps1 && uvicorn app.main:app --reload --port 8000), start frontend (cd frontend && npm run dev), open browser to http://localhost:5173, test each feature manually as admin/reviewer/applicant",
+  "snapshot_or_generated_files": null,
+  "environment_constraints": "Windows PowerShell; Python virtual env at backend/.venv; npm dependencies in frontend/node_modules; SQLite database at backend/smartbursary.db created on first run; deadline field already exists in Bursary model (Date type)",
+  "contribution_requirements": "Maintain existing code patterns; no external dependencies; keep all frontend code in single App.jsx file; match existing component structure (PageHeading, Stat, tables); use existing filtered useMemo pattern; maintain responsive/accessible design",
+  "key_patterns": "Backend: FastAPI route functions with Depends(get_db) and role decorators; schemas use Pydantic BaseModel; models use SQLAlchemy 2 mapped_column. Frontend: functional React components with hooks; inline styles rare (prefer CSS classes); lucide-react icons; money(n) for currency formatting; dateFmt(d) for dates; Badge component for statuses; useMemo for filtered data",
+  "relevant_files": [
+    "c:/dev/SmartBursary-Complete/SmartBursary-Complete/backend/app/main.py",
+    "c:/dev/SmartBursary-Complete/SmartBursary-Complete/backend/app/models.py",
+    "c:/dev/SmartBursary-Complete/SmartBursary-Complete/backend/app/schemas.py",
+    "c:/dev/SmartBursary-Complete/SmartBursary-Complete/frontend/src/App.jsx",
+    "c:/dev/SmartBursary-Complete/SmartBursary-Complete/frontend/src/styles.css",
+    "c:/dev/SmartBursary-Complete/SmartBursary-Complete/backend/seed_test_data.py"
+  ],
+  "directory_structure": "Root: SmartBursary-Complete/SmartBursary-Complete/. Backend: backend/ (app/ contains main.py, models.py, schemas.py, database.py, security.py, config.py; .venv/ is Python virtual env; uploads/ stores documents). Frontend: frontend/ (src/ contains App.jsx, api.js, styles.css, main.jsx; node_modules/ is npm deps). Database: smartbursary.db created on first backend startup. Test data seeding: backend/seed_test_data.py (run separately: python seed_test_data.py)"
+}

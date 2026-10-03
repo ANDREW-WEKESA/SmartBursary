@@ -1,0 +1,30 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Application Deadline Enforcement: backend validation rejecting POST /api/applications when deadline has passed; frontend bursary cards showing deadline countdown, Open/Closed badge, disabling Apply button for expired bursaries; seed data updated with mix of active and expired deadlines",
+  "status": "pending",
+  "steps": [
+    "Backend validation already exists at line 328 of main.py: `if b.deadline < date.today(): raise HTTPException(400,\"The deadline for this bursary has passed\")`. Verify this check is working correctly and returns a clear error message. Test by attempting to POST /api/applications for a bursary with a past deadline via API docs at http://127.0.0.1:8000/docs",
+    "In frontend/src/App.jsx, locate the BursariesPage component (around line 600). The bursary cards are rendered in the program-grid. Add deadline display logic: calculate days remaining as `Math.ceil((new Date(b.deadline + 'T23:59:59') - new Date()) / (1000*60*60*24))`, show 'X days left' if > 0, 'Expired' if <= 0. Add a badge showing 'Open' (green, tone='success') or 'Closed' (red, tone='danger') based on deadline and b.active. Pattern: `<Badge tone={b.active?(new Date(b.deadline+'T23:59:59')<new Date()?'danger':'success'):'danger'}>{b.active?(new Date(b.deadline+'T23:59:59')<new Date()?'Closed':'Open'):'Closed'}</Badge>`",
+    "In the same BursariesPage program-card rendering, find the Apply button at the bottom. Disable it when deadline has passed: check `new Date(b.deadline+'T23:59:59') < new Date()`. Replace the button with a disabled one showing 'Applications Closed' message: `{new Date(b.deadline+'T23:59:59')<new Date()?<Button block disabled>Applications Closed</Button>:<Button block onClick={()=>go('apply')}>Apply for this program <ArrowRight size={16}/></Button>}`. Preserve existing isEligible constituency check logic",
+    "Update seed_test_data.py to create a mix of active and expired deadlines. Find the bursaries_data creation loop (around line 29). Change deadline assignments: for half of bursaries, use `deadline=date.today() + timedelta(days=random.randint(5,60))` (active), for the other half use `deadline=date.today() - timedelta(days=random.randint(1,30))` (expired). Also update the main.py lifespan seed data (around line 21) to have at least one expired bursary for testing: change STEM Merit Bursary deadline to `deadline=date(2024,9,20)` (past date)",
+    "Test: restart backend, reseed database (delete smartbursary.db and restart backend to recreate with new seed data, or run `python seed_test_data.py` from backend/ directory), refresh frontend. Browse bursaries as applicant: verify Open/Closed badges appear, deadline countdown shows, expired bursaries have disabled Apply button. Try to apply to an expired bursary via frontend (should fail at client-side disabled button). Manually test backend API by POSTing to /api/applications with an expired bursary_id via http://127.0.0.1:8000/docs - should return 400 error 'The deadline for this bursary has passed'"
+  ],
+  "acceptance_criteria": [
+    "Backend POST /api/applications returns 400 error with message 'The deadline for this bursary has passed' when attempting to apply to a bursary with deadline < today",
+    "Frontend bursary cards display deadline with countdown (e.g. '5 days left') and show a visual badge 'Open' (green) or 'Closed' (red) based on deadline and active status",
+    "Apply button is disabled and shows 'Applications Closed' message for bursaries where deadline has passed",
+    "Seed data contains a mix of active (future deadline) and expired (past deadline) bursaries for testing"
+  ],
+  "verification": [
+    "Start backend: cd backend && .venv/Scripts/Activate.ps1 && uvicorn app.main:app --reload --port 8000",
+    "Start frontend: cd frontend && npm run dev",
+    "Open browser to http://localhost:5173, sign in as applicant (create new account or use seeded account from seed_test_data.py output)",
+    "Navigate to Bursaries page, verify some show 'Open' badge and countdown, others show 'Closed' badge",
+    "Click on an expired bursary, verify Apply button is disabled with 'Applications Closed' text",
+    "Navigate to Apply page, verify only active bursaries appear in dropdown (expired ones should still be visible in Bursaries list but not applicable)",
+    "Test API directly: open http://127.0.0.1:8000/docs, authorize with JWT token, try POST /api/applications with an expired bursary_id, verify 400 error response"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

@@ -610,3 +610,76 @@ def mark_notification_read(notification_id:int,db:Session=Depends(get_db),user:U
     if not n or n.user_id!=user.id: raise HTTPException(404,"Notification not found")
     n.read=True;db.commit();return {"ok":True}
 
+
+
+@app.get("/api/reports/overview")
+def get_reports_overview(db: Session = Depends(get_db), user: User = Depends(require_roles("admin", "reviewer"))):
+    """Get comprehensive reports and analytics data."""
+    # Base applications query
+    apps_query = select(Application).options(joinedload(Application.bursary))
+    if user.role == "reviewer" and user.constituency:
+        apps_query = apps_query.join(Application.bursary).where(Bursary.constituency == user.constituency)
+    
+    all_apps = list(db.scalars(apps_query).unique().all())
+    
+    # Overall stats
+    total_apps = len(all_apps)
+    approved = len([a for a in all_apps if a.status == "Approved"])
+    rejected = len([a for a in all_apps if a.status == "Rejected"])
+    pending = len([a for a in all_apps if a.status in ["Submitted", "Under Review", "Verification", "Committee Review"]])
+    disbursed = len([a for a in all_apps if a.status == "Disbursed"])
+    
+    # Total disbursed amount
+    total_disbursed = sum([a.bursary.amount_kes for a in all_apps if a.status == "Disbursed"])
+    
+    # Applications by constituency
+    constituency_data = {}
+    for app in all_apps:
+        const = app.bursary.constituency or "Unspecified"
+        if const not in constituency_data:
+            constituency_data[const] = {"total": 0, "approved": 0, "pending": 0, "disbursed": 0, "amount": 0}
+        constituency_data[const]["total"] += 1
+        if app.status == "Approved":
+            constituency_data[const]["approved"] += 1
+        if app.status in ["Submitted", "Under Review", "Verification", "Committee Review"]:
+            constituency_data[const]["pending"] += 1
+        if app.status == "Disbursed":
+            constituency_data[const]["disbursed"] += 1
+            constituency_data[const]["amount"] += app.bursary.amount_kes
+    
+    # Applications by status
+    status_data = {}
+    for status in STATUSES:
+        count = len([a for a in all_apps if a.status == status])
+        status_data[status] = count
+    
+    # Applications by bursary
+    bursary_data = {}
+    for app in all_apps:
+        bursary_name = app.bursary.name
+        if bursary_name not in bursary_data:
+            bursary_data[bursary_name] = {"total": 0, "approved": 0, "avg_amount": app.bursary.amount_kes}
+        bursary_data[bursary_name]["total"] += 1
+        if app.status == "Approved" or app.status == "Disbursed":
+            bursary_data[bursary_name]["approved"] += 1
+    
+    return {
+        "summary": {
+            "total_applications": total_apps,
+            "approved": approved,
+            "rejected": rejected,
+            "pending": pending,
+            "disbursed": disbursed,
+            "total_disbursed_amount": total_disbursed,
+            "approval_rate": round((approved / total_apps * 100) if total_apps > 0 else 0, 1)
+        },
+        "by_constituency": [
+            {"constituency": k, **v, "approval_rate": round((v["approved"] / v["total"] * 100) if v["total"] > 0 else 0, 1)}
+            for k, v in sorted(constituency_data.items())
+        ],
+        "by_status": [{"status": k, "count": v, "percentage": round((v / total_apps * 100) if total_apps > 0 else 0, 1)} for k, v in status_data.items()],
+        "by_bursary": [
+            {"bursary": k, **v, "approval_rate": round((v["approved"] / v["total"] * 100) if v["total"] > 0 else 0, 1)}
+            for k, v in sorted(bursary_data.items(), key=lambda x: x[1]["total"], reverse=True)
+        ]
+    }
