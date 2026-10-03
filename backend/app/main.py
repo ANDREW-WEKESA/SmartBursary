@@ -419,23 +419,39 @@ def toggle_bursary(bursary_id: int, db: Session = Depends(get_db), user: User = 
 
 @app.get("/api/staff", response_model=list[UserOut])
 def list_staff(db: Session = Depends(get_db), user: User = Depends(require_roles("admin"))):
-    """List all staff users (admin and reviewer)"""
-    staff = db.scalars(select(User).where(User.role.in_(["admin", "reviewer"])).order_by(User.full_name)).all()
+    """List staff users - filtered by constituency for constituency admins"""
+    query = select(User).where(User.role.in_(["admin", "reviewer"]))
+    
+    # If admin has a constituency, only show staff from that constituency
+    if user.constituency:
+        query = query.where(User.constituency == user.constituency)
+    
+    staff = db.scalars(query.order_by(User.full_name)).all()
     return staff
 
 @app.post("/api/staff", response_model=UserOut, status_code=201)
 def create_staff_user(data: StaffUserIn, db: Session = Depends(get_db), user: User = Depends(require_roles("admin"))):
-    """Create a new staff user with constituency assignment"""
+    """Create a new staff user - constituency admins can only create staff for their constituency"""
     email = str(data.email).lower()
     if db.scalar(select(User.id).where(User.email == email)):
         raise HTTPException(409, "An account with this email already exists")
+    
+    # If admin has a constituency, enforce they can only create staff for their constituency
+    if user.constituency and data.constituency != user.constituency:
+        raise HTTPException(403, f"You can only create staff for your constituency ({user.constituency})")
+    
+    # Constituency admins can only create reviewers, not other admins
+    if user.constituency and data.role == "admin":
+        raise HTTPException(403, "Constituency admins cannot create other admin accounts")
+    
     staff_user = User(
         full_name=data.full_name.strip(),
         email=email,
         password_hash=hash_password(data.password),
         role=data.role,
         constituency=data.constituency,
-        active=True
+        active=True,
+        email_verified=True  # Staff accounts are pre-verified
     )
     db.add(staff_user)
     db.flush()

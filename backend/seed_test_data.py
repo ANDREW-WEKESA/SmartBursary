@@ -83,7 +83,32 @@ def seed_test_data():
         for b in bursaries_data:
             db.refresh(b)
         
-        # 2. Create Reviewers for each constituency
+        # 2. Create Constituency Admins (one per constituency)
+        print("\n👔 Creating constituency admins...")
+        admins = []
+        for i, constituency in enumerate(constituencies, 1):
+            email = f"admin.{constituency.lower().replace(' ', '')}@smartbursary.com"
+            existing = db.scalar(select(User.id).where(User.email == email))
+            
+            if not existing:
+                admin = User(
+                    full_name=f"{constituency} Admin",
+                    email=email,
+                    phone=f"0711{str(i).zfill(6)}",
+                    password_hash=hash_password("admin123"),
+                    role="admin",
+                    constituency=constituency,
+                    profile_complete=True,
+                    email_verified=True
+                )
+                db.add(admin)
+                admins.append(admin)
+                print(f"  ✓ Created: {email} (constituency: {constituency})")
+        
+        db.commit()
+        print(f"✅ Created {len(admins)} constituency admins")
+        
+        # 3. Create Reviewers for each constituency
         print("\n👥 Creating reviewers for each constituency...")
         reviewers = []
         for i, constituency in enumerate(constituencies, 1):
@@ -98,7 +123,8 @@ def seed_test_data():
                     password_hash=hash_password("reviewer123"),
                     role="reviewer",
                     constituency=constituency,
-                    profile_complete=True
+                    profile_complete=True,
+                    email_verified=True
                 )
                 db.add(reviewer)
                 reviewers.append(reviewer)
@@ -107,7 +133,7 @@ def seed_test_data():
         db.commit()
         print(f"✅ Created {len(reviewers)} reviewers")
         
-        # 3. Create Test Applicants for each constituency
+        # 4. Create Test Applicants for each constituency
         print("\n👨‍🎓 Creating test applicants...")
         applicants = []
         first_names = ["John", "Mary", "Peter", "Grace", "David", "Sarah", "James", "Lucy"]
@@ -240,9 +266,13 @@ def seed_test_data():
         print(f"   • Applications: {applications_created}")
         
         print("\n🔐 Login Credentials:")
-        print("\n   Admin:")
+        print("\n   Super Admin (optional - see all constituencies):")
         print("   Email: admin@smartbursary.com")
         print("   Password: admin123")
+        
+        print("\n   Constituency Admins (all use password: admin123):")
+        for constituency in constituencies:
+            print(f"   • admin.{constituency.lower().replace(' ', '')}@smartbursary.com ({constituency})")
         
         print("\n   Reviewers (all use password: reviewer123):")
         for constituency in constituencies[:3]:  # Show first 3
