@@ -1,0 +1,32 @@
+{
+  "verdict": "CHANGES_REQUESTED",
+  "findings": {
+    "high": 5,
+    "medium": 7,
+    "nit": 6
+  },
+  "reviewDoc": "design-review.md",
+  "summary": "5 HIGH and 7 MEDIUM findings block approval. Critical issues: missing allocated_amount field for per-application disbursement tracking (user requirement from message 4), ambiguous error logging, unverified Chart.js integration path, schema compatibility gaps, illogical constituency breakdown access control, timezone discrepancies in deadline enforcement, disconnected frontend-backend filter implementation, missing input validation, and HTML injection risks in email templates.",
+  "mustFix": [
+    "Add Application.allocated_amount field with migration and update reports calculations",
+    "Specify explicit error logging format to prevent credential exposure",
+    "Verify index.html location or switch to npm-based Chart.js import",
+    "Verify ApplicationOut schema matches application_out() return structure",
+    "Fix constituency_breakdown endpoint access control for reviewers",
+    "Resolve timezone handling for deadline enforcement consistency",
+    "Connect frontend filter state changes to backend API calls with query params",
+    "Add case-insensitive collation for constituency/name sorting",
+    "Return 400 errors for invalid date formats instead of silent ignore",
+    "Add URL query param persistence to BursariesPage filters",
+    "Add HTML escaping to email template user inputs",
+    "Filter inactive users from reviewer notification query"
+  ],
+  "recommendedOrder": [
+    "HIGH #1 - allocated_amount field (blocks reports accuracy and user requirement)",
+    "HIGH #2 - error logging specification (security concern)",
+    "MEDIUM #7 - frontend-backend filter coordination (feature broken)",
+    "MEDIUM #6 - timezone handling (prevents application rejection bugs)",
+    "HIGH #3, #4, #5 - remaining HIGH findings",
+    "MEDIUM findings in order of impact"
+  ]
+}

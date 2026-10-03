@@ -8,6 +8,16 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     upload_dir: str = "uploads"
     max_upload_mb: int = 5
+    
+    # Email settings
+    smtp_host: str = "localhost"
+    smtp_port: int = 1025
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_from_email: str = "noreply@smartbursary.com"
+    smtp_from_name: str = "SmartBursary System"
+    email_enabled: bool = True
+    
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 settings = Settings()

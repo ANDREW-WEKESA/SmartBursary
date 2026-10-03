@@ -12,6 +12,11 @@ from .database import Base, engine, get_db, SessionLocal
 from .models import User, Bursary, Application, Document, AuditLog, Notification, ProfileDocument
 from .schemas import RegisterIn, LoginIn, TokenOut, UserOut, StaffUserIn, BursaryIn, BursaryOut, ApplicationIn, ApplicationOut, StatusIn, DocumentOut, ProfileUpdateIn, ProfileOut, ProfileDocumentOut
 from .security import hash_password, verify_password, create_token, current_user, require_roles
+from .email_service import (
+    send_application_submitted_email,
+    send_application_status_changed_email,
+    send_new_application_notification_to_reviewers
+)
 
 STATUSES = {"Submitted", "Under Review", "Verification", "Additional Information Required", "Committee Review", "Approved", "Rejected", "Disbursed"}
 ALLOWED_EXT = {".pdf", ".jpg", ".jpeg", ".png"}
@@ -349,6 +354,23 @@ def submit_application(data:ApplicationIn,db:Session=Depends(get_db),user:User=D
     while db.scalar(select(Application.id).where(Application.application_number==number)): number=f"SB-{datetime.now().year}-{uuid.uuid4().hex[:6].upper()}"
     a=Application(application_number=number,applicant_id=user.id,bursary_id=b.id,institution=institution,student_number=student_number,national_id=national_id,monthly_household_income=monthly_household_income,household_size=household_size,course=course,year_of_study=year_of_study,reason=data.reason.strip(),priority_score=score,financial_need=fin,duplicate_risk=dup)
     db.add(a);db.flush();db.add(Notification(user_id=user.id,title="Application submitted",message=f"Your application {number} has been submitted."));audit(db,user,"Submitted application","Application",a.id,number);db.commit()
+    
+    # Send email notifications
+    send_application_submitted_email(user.email, user.full_name, b.name, number)
+    
+    # Notify reviewers in the same constituency
+    if b.constituency:
+        reviewers = db.scalars(select(User).where(
+            User.role == "reviewer",
+            User.constituency == b.constituency,
+            User.active == True
+        )).all()
+        reviewer_emails = [r.email for r in reviewers if r.email]
+        if reviewer_emails:
+            send_new_application_notification_to_reviewers(
+                reviewer_emails, b.name, user.full_name, b.constituency, number
+            )
+    
     a=db.scalars(app_query(db).where(Application.id==a.id)).unique().first();return application_out(a)
 
 @app.get("/api/applications", response_model=list[ApplicationOut])
@@ -376,7 +398,19 @@ def update_status(application_number:str,data:StatusIn,db:Session=Depends(get_db
     a=db.scalars(app_query(db).where(Application.application_number==application_number)).unique().first()
     if not a: raise HTTPException(404,"Application not found")
     old=a.status;a.status=data.status;a.reviewer_comment=data.reviewer_comment
-    db.add(Notification(user_id=a.applicant_id,title="Application status updated",message=f"{a.application_number}: {old} → {a.status}"));audit(db,user,f"Changed status from {old} to {a.status}","Application",a.id,data.reviewer_comment);db.commit();a=db.scalars(app_query(db).where(Application.id==a.id)).unique().first();return application_out(a)
+    db.add(Notification(user_id=a.applicant_id,title="Application status updated",message=f"{a.application_number}: {old} → {a.status}"));audit(db,user,f"Changed status from {old} to {a.status}","Application",a.id,data.reviewer_comment);db.commit()
+    
+    # Send email notification to applicant
+    send_application_status_changed_email(
+        a.applicant.email,
+        a.applicant.full_name,
+        a.bursary.name,
+        a.application_number,
+        a.status,
+        a.bursary.amount_kes if a.status.lower() in ["approved", "disbursed"] else None
+    )
+    
+    a=db.scalars(app_query(db).where(Application.id==a.id)).unique().first();return application_out(a)
 
 @app.post("/api/applications/{application_number}/documents", response_model=DocumentOut, status_code=201)
 async def upload_document(application_number:str,document_type:str=Form(...),file:UploadFile=File(...),db:Session=Depends(get_db),user:User=Depends(current_user)):
