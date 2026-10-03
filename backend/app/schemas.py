@@ -56,7 +56,7 @@ class ProfileOut(BaseModel):
     profile_complete: bool
     date_of_birth: date | None; national_id: str; gender: str; county: str; sub_county: str; constituency: str; address: str
     guardian_name: str; guardian_phone: str; guardian_relationship: str
-    institution: str; student_number: str; course: sone tr; year_of_study: str; admission_year: int | None
+    institution: str; student_number: str; course: str; year_of_study: str; admission_year: int | None
     monthly_household_income: int; household_size: int
     has_national_id_doc: bool; has_student_id_doc: bool; has_admission_letter: bool
     profile_documents: list[ProfileDocumentOut]
