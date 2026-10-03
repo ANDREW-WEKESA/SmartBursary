@@ -1,8 +1,14 @@
 """
-Seed comprehensive test data for SmartBursary
+Seed comprehensive test data for SmartBursary with real Kenya constituencies
 Run this with: python seed_test_data.py
 """
 import sys
+import io
+
+# Fix unicode output for Windows
+if sys.platform == "win32":
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+
 from datetime import date, datetime, timedelta
 from app.database import SessionLocal
 from app.models import User, Bursary, Application, Document
@@ -18,60 +24,79 @@ def seed_test_data():
         print("🌱 Starting to seed test data...")
         
         # Define constituencies
-        constituencies = [
-            "Nairobi North",
-            "Mombasa",
-            "Kisumu Central",
-            "Eldoret West",
-            "Nakuru East"
+        # Real Kenya constituencies with their counties
+        constituencies_data = [
+            {"constituency": "Westlands", "county": "Nairobi"},
+            {"constituency": "Dagoretti North", "county": "Nairobi"},
+            {"constituency": "Langata", "county": "Nairobi"},
+            {"constituency": "Mvita", "county": "Mombasa"},
+            {"constituency": "Kisauni", "county": "Mombasa"},
+            {"constituency": "Kisumu East", "county": "Kisumu"},
+            {"constituency": "Kisumu Central", "county": "Kisumu"},
+            {"constituency": "Eldoret East", "county": "Uasin Gishu"},
+            {"constituency": "Eldoret West", "county": "Uasin Gishu"},
+            {"constituency": "Nakuru Town East", "county": "Nakuru"},
+            {"constituency": "Nakuru Town West", "county": "Nakuru"},
+            {"constituency": "Thika Town", "county": "Kiambu"},
+            {"constituency": "Kikuyu", "county": "Kiambu"},
+            {"constituency": "Starehe", "county": "Nairobi"},
+            {"constituency": "Embakasi South", "county": "Nairobi"},
         ]
+        
+        constituencies = [c["constituency"] for c in constituencies_data]
+        print(f"\n🗺️  Will create data for {len(constituencies)} constituencies across {len(set(c['county'] for c in constituencies_data))} counties")
         
         # 1. Create Bursaries for each constituency
         print("\n📋 Creating bursaries for each constituency...")
         bursaries_data = []
-        for constituency in constituencies:
+        for const_data in constituencies_data:
+            constituency = const_data["constituency"]
+            county = const_data["county"]
             # Create 2 bursaries per constituency
             bursary1 = Bursary(
-                name=f"{constituency} Education Fund 2026",
-                description=f"Supporting students from {constituency} to achieve their educational goals.",
-                eligibility=f"Must be a resident of {constituency} and enrolled in a recognized institution",
+                name=f"{constituency} CDF Bursary 2026",
+                description=f"Constituency Development Fund bursary for students from {constituency}, {county} County.",
+                eligibility=f"Must be a resident of {constituency} constituency in {county} County and enrolled in a recognized institution.",
                 constituency=constituency,
                 amount_kes=random.choice([15000, 20000, 25000, 30000]),
-                show_amount=random.choice([True, True, False]),  # 2/3 show amount
-                deadline=date(2026, 11, 30),
+                show_amount=True,
+                deadline=date.today() + timedelta(days=random.choice([30, 45, 60, 90])),
                 required_documents=json.dumps([
-                    "National ID or birth certificate",
-                    "School admission letter",
-                    "Fee structure",
-                    "Income proof"
+                    "National ID or Birth Certificate",
+                    "Admission Letter",
+                    "Fee Structure",
+                    "Parents ID Copies"
                 ]),
                 active=True
             )
             
             bursary2 = Bursary(
-                name=f"{constituency} Merit Scholarship",
-                description=f"Merit-based support for high-achieving students from {constituency}.",
-                eligibility=f"Resident of {constituency} with mean grade B+ or higher",
+                name=f"{constituency} Merit Scholarship 2026",
+                description=f"Merit-based scholarship for high-achieving students from {constituency} constituency, {county} County.",
+                eligibility=f"Minimum B grade, resident of {constituency} constituency",
                 constituency=constituency,
-                amount_kes=random.choice([35000, 40000, 45000]),
-                show_amount=True,
-                deadline=date(2026, 12, 15),
+                amount_kes=random.choice([35000, 40000, 45000, 50000]),
+                show_amount=random.choice([True, True, False]),
+                deadline=date.today() + timedelta(days=random.choice([20, 40, 60])),
                 required_documents=json.dumps([
                     "National ID",
-                    "Academic transcripts",
-                    "Fee structure"
+                    "Academic Transcripts",
+                    "Recommendation Letter",
+                    "Fee Structure"
                 ]),
-                active=True
+                active=random.choice([True, True, True, False])  # 75% active
             )
             
-            existing = db.scalar(select(Bursary.id).where(Bursary.name == bursary1.name))
-            if not existing:
+            # Check if bursaries already exist
+            existing1 = db.scalar(select(Bursary.id).where(Bursary.name == bursary1.name))
+            existing2 = db.scalar(select(Bursary.id).where(Bursary.name == bursary2.name))
+            
+            if not existing1:
                 db.add(bursary1)
                 bursaries_data.append(bursary1)
                 print(f"  ✓ Created: {bursary1.name}")
             
-            existing = db.scalar(select(Bursary.id).where(Bursary.name == bursary2.name))
-            if not existing:
+            if not existing2:
                 db.add(bursary2)
                 bursaries_data.append(bursary2)
                 print(f"  ✓ Created: {bursary2.name}")
@@ -86,7 +111,9 @@ def seed_test_data():
         # 2. Create Constituency Admins (one per constituency)
         print("\n👔 Creating constituency admins...")
         admins = []
-        for i, constituency in enumerate(constituencies, 1):
+        for const_data in constituencies_data:
+            constituency = const_data["constituency"]
+            county = const_data["county"]
             email = f"admin.{constituency.lower().replace(' ', '')}@smartbursary.com"
             existing = db.scalar(select(User.id).where(User.email == email))
             
@@ -94,16 +121,17 @@ def seed_test_data():
                 admin = User(
                     full_name=f"{constituency} Admin",
                     email=email,
-                    phone=f"0711{str(i).zfill(6)}",
+                    phone=f"0711{str(len(admins)+1).zfill(6)}",
                     password_hash=hash_password("admin123"),
                     role="admin",
                     constituency=constituency,
+                    county=county,
                     profile_complete=True,
                     email_verified=True
                 )
                 db.add(admin)
                 admins.append(admin)
-                print(f"  ✓ Created: {email} (constituency: {constituency})")
+                print(f"  ✓ Created: {email} ({constituency}, {county})")
         
         db.commit()
         print(f"✅ Created {len(admins)} constituency admins")
@@ -111,7 +139,9 @@ def seed_test_data():
         # 3. Create Reviewers for each constituency
         print("\n👥 Creating reviewers for each constituency...")
         reviewers = []
-        for i, constituency in enumerate(constituencies, 1):
+        for const_data in constituencies_data:
+            constituency = const_data["constituency"]
+            county = const_data["county"]
             email = f"reviewer.{constituency.lower().replace(' ', '')}@smartbursary.com"
             existing = db.scalar(select(User.id).where(User.email == email))
             
@@ -119,16 +149,17 @@ def seed_test_data():
                 reviewer = User(
                     full_name=f"{constituency} Reviewer",
                     email=email,
-                    phone=f"0712{str(i).zfill(6)}",
+                    phone=f"0712{str(len(reviewers)+1).zfill(6)}",
                     password_hash=hash_password("reviewer123"),
                     role="reviewer",
                     constituency=constituency,
+                    county=county,
                     profile_complete=True,
                     email_verified=True
                 )
                 db.add(reviewer)
                 reviewers.append(reviewer)
-                print(f"  ✓ Created: {email} (constituency: {constituency})")
+                print(f"  ✓ Created: {email} ({constituency}, {county})")
         
         db.commit()
         print(f"✅ Created {len(reviewers)} reviewers")
@@ -139,12 +170,14 @@ def seed_test_data():
         first_names = ["John", "Mary", "Peter", "Grace", "David", "Sarah", "James", "Lucy"]
         last_names = ["Kamau", "Wanjiku", "Ochieng", "Atieno", "Kipchoge", "Mwangi", "Njeri", "Onyango"]
         
-        for i, constituency in enumerate(constituencies):
+        for const_data in constituencies_data:
+            constituency = const_data["constituency"]
+            county = const_data["county"]
             # Create 3 applicants per constituency
             for j in range(3):
                 fname = random.choice(first_names)
                 lname = random.choice(last_names)
-                email = f"{fname.lower()}.{lname.lower()}.{i}{j}@student.ke"
+                email = f"{fname.lower()}.{lname.lower()}.{len(applicants)}{j}@student.ke"
                 
                 existing = db.scalar(select(User.id).where(User.email == email))
                 if existing:
@@ -157,12 +190,13 @@ def seed_test_data():
                     password_hash=hash_password("student123"),
                     role="applicant",
                     constituency=constituency,
+                    county=county,
                     profile_complete=True,
+                    email_verified=True,
                     date_of_birth=date(2002 + random.randint(0, 5), random.randint(1, 12), random.randint(1, 28)),
                     national_id=f"{random.randint(30000000, 39999999)}",
                     gender=random.choice(["Male", "Female"]),
-                    county=constituency.split()[0],
-                    institution=random.choice(["University of Nairobi", "Kenyatta University", "Moi University", "JKUAT"]),
+                    institution=random.choice(["University of Nairobi", "Kenyatta University", "Moi University", "JKUAT", "Strathmore University"]),
                     student_number=f"STU{random.randint(100000, 999999)}",
                     course=random.choice(["Computer Science", "Business Administration", "Engineering", "Medicine", "Education"]),
                     year_of_study="Year " + str(random.randint(1, 4)),
@@ -260,7 +294,9 @@ def seed_test_data():
         print("="*60)
         print("\n📊 Summary:")
         print(f"   • Constituencies: {len(constituencies)}")
+        print(f"   • Counties: {len(set(c['county'] for c in constituencies_data))}")
         print(f"   • Bursaries: {len(bursaries_data)}")
+        print(f"   • Constituency Admins: {len(admins)}")
         print(f"   • Reviewers: {len(reviewers)}")
         print(f"   • Applicants: {len(applicants)}")
         print(f"   • Applications: {applications_created}")
@@ -271,13 +307,19 @@ def seed_test_data():
         print("   Password: admin123")
         
         print("\n   Constituency Admins (all use password: admin123):")
-        for constituency in constituencies:
-            print(f"   • admin.{constituency.lower().replace(' ', '')}@smartbursary.com ({constituency})")
+        for const_data in constituencies_data[:5]:  # Show first 5
+            const = const_data["constituency"]
+            county = const_data["county"]
+            print(f"   • admin.{const.lower().replace(' ', '')}@smartbursary.com ({const}, {county})")
+        if len(constituencies_data) > 5:
+            print(f"   ... and {len(constituencies_data) - 5} more")
         
         print("\n   Reviewers (all use password: reviewer123):")
-        for constituency in constituencies[:3]:  # Show first 3
-            print(f"   • reviewer.{constituency.lower().replace(' ', '')}@smartbursary.com")
-        print("   ... and more")
+        for const_data in constituencies_data[:5]:  # Show first 5
+            const = const_data["constituency"]
+            print(f"   • reviewer.{const.lower().replace(' ', '')}@smartbursary.com ({const})")
+        if len(constituencies_data) > 5:
+            print(f"   ... and {len(constituencies_data) - 5} more")
         
         print("\n   Applicants (all use password: student123):")
         for applicant in applicants[:3]:  # Show first 3
