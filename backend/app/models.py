@@ -49,6 +49,7 @@ class Bursary(Base):
     eligibility: Mapped[str] = mapped_column(Text, default="")
     constituency: Mapped[str] = mapped_column(String(100), default="")
     amount_kes: Mapped[int] = mapped_column(Integer, default=0)
+    show_amount: Mapped[bool] = mapped_column(Boolean, default=True)
     deadline: Mapped[date] = mapped_column(Date)
     required_documents: Mapped[str] = mapped_column(Text, default="[]")
     active: Mapped[bool] = mapped_column(Boolean, default=True)

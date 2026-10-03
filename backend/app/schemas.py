@@ -56,7 +56,7 @@ class ProfileOut(BaseModel):
     profile_complete: bool
     date_of_birth: date | None; national_id: str; gender: str; county: str; sub_county: str; constituency: str; address: str
     guardian_name: str; guardian_phone: str; guardian_relationship: str
-    institution: str; student_number: str; course: str; year_of_study: str; admission_year: int | None
+    institution: str; student_number: str; course: sone tr; year_of_study: str; admission_year: int | None
     monthly_household_income: int; household_size: int
     has_national_id_doc: bool; has_student_id_doc: bool; has_admission_letter: bool
     profile_documents: list[ProfileDocumentOut]
@@ -71,12 +71,13 @@ class BursaryIn(BaseModel):
     eligibility: str = ""
     constituency: str = ""
     amount_kes: int = Field(ge=0)
+    show_amount: bool = True
     deadline: date
     required_documents: list[str] = []
     active: bool = True
 
 class BursaryOut(BaseModel):
-    id: int; name: str; description: str; eligibility: str; constituency: str; amount_kes: int; deadline: date; required_documents: list[str]; active: bool
+    id: int; name: str; description: str; eligibility: str; constituency: str; amount_kes: int; show_amount: bool; deadline: date; required_documents: list[str]; active: bool
 
 class ApplicationIn(BaseModel):
     bursary_id: int
@@ -98,7 +99,7 @@ class DocumentOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class ApplicationOut(BaseModel):
-    id: int; application_number: str; applicant_id: int; applicant_name: str; applicant_email: str; bursary_id: int; bursary_name: str; amount_kes: int; institution: str; student_number: str; national_id: str; monthly_household_income: int; household_size: int; course: str; year_of_study: str; reason: str; status: str; priority_score: int; financial_need: str; education_need: str; duplicate_risk: str; reviewer_comment: str; submitted_at: datetime; updated_at: datetime; documents: list[DocumentOut]
+    id: int; application_number: str; applicant_id: int; applicant_name: str; applicant_email: str; bursary_id: int; bursary_name: str; amount_kes: int; show_amount: bool; institution: str; student_number: str; national_id: str; monthly_household_income: int; household_size: int; course: str; year_of_study: str; reason: str; status: str; priority_score: int; financial_need: str; education_need: str; duplicate_risk: str; reviewer_comment: str; submitted_at: datetime; updated_at: datetime; documents: list[DocumentOut]
 
 
 class StaffUserIn(BaseModel):
