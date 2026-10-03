@@ -3,9 +3,15 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from typing import List
 import logging
+import random
 from .config import settings
 
 logger = logging.getLogger(__name__)
+
+
+def generate_otp() -> str:
+    """Generate a 6-digit OTP code."""
+    return ''.join([str(random.randint(0, 9)) for _ in range(6)])
 
 
 def send_email(to_email: str, subject: str, html_body: str, text_body: str = None):
@@ -216,3 +222,45 @@ SmartBursary System
     
     for email in reviewer_emails:
         send_email(email, subject, html_body, text_body)
+
+
+def send_otp_email(email: str, full_name: str, otp_code: str):
+    """Send OTP verification email for registration."""
+    subject = "Verify Your Email - SmartBursary"
+    
+    html_body = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #2563eb;">Email Verification</h2>
+            <p>Dear {full_name},</p>
+            <p>Thank you for registering with SmartBursary. To complete your registration, please verify your email address using the code below:</p>
+            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center;">
+                <h1 style="color: #2563eb; font-size: 36px; letter-spacing: 8px; margin: 0;">{otp_code}</h1>
+            </div>
+            <p>This code will expire in <strong>10 minutes</strong>.</p>
+            <p>If you didn't request this code, please ignore this email.</p>
+            <p style="margin-top: 30px;">Best regards,<br>SmartBursary Team</p>
+        </div>
+    </body>
+    </html>
+    """
+    
+    text_body = f"""
+Email Verification
+
+Dear {full_name},
+
+Thank you for registering with SmartBursary. To complete your registration, please verify your email address using the code below:
+
+{otp_code}
+
+This code will expire in 10 minutes.
+
+If you didn't request this code, please ignore this email.
+
+Best regards,
+SmartBursary Team
+    """
+    
+    send_email(email, subject, html_body, text_body)

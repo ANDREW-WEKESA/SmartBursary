@@ -7,6 +7,10 @@ class RegisterIn(BaseModel):
     phone: str = Field(default="", max_length=40)
     password: str = Field(min_length=8, max_length=128)
 
+class VerifyOTPIn(BaseModel):
+    email: EmailStr
+    otp_code: str = Field(min_length=6, max_length=6)
+
 class LoginIn(BaseModel):
     email: EmailStr
     password: str

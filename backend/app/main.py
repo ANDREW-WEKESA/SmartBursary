@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 import json, os, uuid, csv, io
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, Query, Request
@@ -7,12 +7,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy import select, or_, func
 from sqlalchemy.orm import Session, joinedload
+from pydantic import EmailStr
 from .config import settings
 from .database import Base, engine, get_db, SessionLocal
-from .models import User, Bursary, Application, Document, AuditLog, Notification, ProfileDocument
-from .schemas import RegisterIn, LoginIn, TokenOut, UserOut, StaffUserIn, BursaryIn, BursaryOut, ApplicationIn, ApplicationOut, StatusIn, DocumentOut, ProfileUpdateIn, ProfileOut, ProfileDocumentOut
+from .models import User, Bursary, Application, Document, AuditLog, Notification, ProfileDocument, EmailOTP
+from .schemas import RegisterIn, VerifyOTPIn, LoginIn, TokenOut, UserOut, StaffUserIn, BursaryIn, BursaryOut, ApplicationIn, ApplicationOut, StatusIn, DocumentOut, ProfileUpdateIn, ProfileOut, ProfileDocumentOut
 from .security import hash_password, verify_password, create_token, current_user, require_roles
 from .email_service import (
+    generate_otp,
+    send_otp_email,
     send_application_submitted_email,
     send_application_status_changed_email,
     send_new_application_notification_to_reviewers
@@ -63,13 +66,132 @@ def priority(income: int, household: int, duplicate: bool):
 @app.get("/api/health")
 def health(): return {"status":"ok","service":"SmartBursary API"}
 
-@app.post("/api/auth/register", response_model=TokenOut, status_code=201)
+@app.post("/api/auth/register", status_code=201)
 def register(data: RegisterIn, db: Session = Depends(get_db)):
+    """Register a new user and send OTP for email verification."""
     email = str(data.email).lower()
-    if db.scalar(select(User.id).where(User.email == email)): raise HTTPException(409, "An account with this email already exists")
-    user = User(full_name=data.full_name.strip(), email=email, phone=data.phone.strip(), password_hash=hash_password(data.password), role="applicant")
-    db.add(user); db.flush(); audit(db,user,"Registered account","User",user.id); db.commit(); db.refresh(user)
-    return {"access_token":create_token(user),"user":user}
+    
+    # Check if user already exists
+    if db.scalar(select(User.id).where(User.email == email)):
+        raise HTTPException(409, "An account with this email already exists")
+    
+    # Create user but mark as unverified
+    user = User(
+        full_name=data.full_name.strip(),
+        email=email,
+        phone=data.phone.strip(),
+        password_hash=hash_password(data.password),
+        role="applicant",
+        email_verified=False,
+        active=False  # Account inactive until email verified
+    )
+    db.add(user)
+    db.flush()
+    
+    # Generate and store OTP
+    otp_code = generate_otp()
+    expires_at = datetime.utcnow() + timedelta(minutes=10)
+    
+    # Remove any existing OTPs for this email
+    db.execute(select(EmailOTP).where(EmailOTP.email == email)).scalars().all()
+    for old_otp in db.scalars(select(EmailOTP).where(EmailOTP.email == email)).all():
+        db.delete(old_otp)
+    
+    otp = EmailOTP(
+        email=email,
+        otp_code=otp_code,
+        purpose="registration",
+        expires_at=expires_at
+    )
+    db.add(otp)
+    
+    audit(db, None, "User registered (pending verification)", "User", user.id, email)
+    db.commit()
+    
+    # Send OTP email
+    send_otp_email(email, user.full_name, otp_code)
+    
+    return {
+        "message": "Registration successful. Please check your email for the verification code.",
+        "email": email,
+        "requires_verification": True
+    }
+
+@app.post("/api/auth/verify-otp", response_model=TokenOut)
+def verify_otp(data: VerifyOTPIn, db: Session = Depends(get_db)):
+    """Verify OTP and activate user account."""
+    email = str(data.email).lower()
+    
+    # Find user
+    user = db.scalar(select(User).where(User.email == email))
+    if not user:
+        raise HTTPException(404, "User not found")
+    
+    if user.email_verified:
+        raise HTTPException(400, "Email already verified")
+    
+    # Find valid OTP
+    otp = db.scalar(
+        select(EmailOTP)
+        .where(
+            EmailOTP.email == email,
+            EmailOTP.otp_code == data.otp_code,
+            EmailOTP.purpose == "registration",
+            EmailOTP.verified == False,
+            EmailOTP.expires_at > datetime.utcnow()
+        )
+        .order_by(EmailOTP.created_at.desc())
+    )
+    
+    if not otp:
+        raise HTTPException(400, "Invalid or expired verification code")
+    
+    # Mark OTP as verified
+    otp.verified = True
+    
+    # Activate user account
+    user.email_verified = True
+    user.active = True
+    
+    audit(db, user, "Email verified and account activated", "User", user.id)
+    db.commit()
+    db.refresh(user)
+    
+    return {"access_token": create_token(user), "user": user}
+
+@app.post("/api/auth/resend-otp", status_code=200)
+def resend_otp(email: EmailStr, db: Session = Depends(get_db)):
+    """Resend OTP code to user's email."""
+    email_lower = str(email).lower()
+    
+    user = db.scalar(select(User).where(User.email == email_lower))
+    if not user:
+        raise HTTPException(404, "User not found")
+    
+    if user.email_verified:
+        raise HTTPException(400, "Email already verified")
+    
+    # Generate new OTP
+    otp_code = generate_otp()
+    expires_at = datetime.utcnow() + timedelta(minutes=10)
+    
+    # Invalidate old OTPs
+    for old_otp in db.scalars(select(EmailOTP).where(EmailOTP.email == email_lower)).all():
+        db.delete(old_otp)
+    
+    otp = EmailOTP(
+        email=email_lower,
+        otp_code=otp_code,
+        purpose="registration",
+        expires_at=expires_at
+    )
+    db.add(otp)
+    db.commit()
+    
+    # Send new OTP
+    send_otp_email(email_lower, user.full_name, otp_code)
+    
+    return {"message": "Verification code resent successfully"}
 
 @app.post("/api/auth/login", response_model=TokenOut)
 def login(data: LoginIn, db: Session = Depends(get_db)):

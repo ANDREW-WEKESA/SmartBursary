@@ -13,6 +13,7 @@ class User(Base):
     role: Mapped[str] = mapped_column(String(30), default="applicant")
     constituency: Mapped[str] = mapped_column(String(100), default="")
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     # Profile fields
     profile_complete: Mapped[bool] = mapped_column(Boolean, default=False)
     date_of_birth: Mapped[date | None] = mapped_column(Date, nullable=True)
@@ -125,4 +126,14 @@ class Notification(Base):
     title: Mapped[str] = mapped_column(String(180))
     message: Mapped[str] = mapped_column(Text)
     read: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+class EmailOTP(Base):
+    __tablename__ = "email_otps"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(String(254), index=True)
+    otp_code: Mapped[str] = mapped_column(String(6))
+    purpose: Mapped[str] = mapped_column(String(50), default="registration")  # registration, password_reset
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+    verified: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

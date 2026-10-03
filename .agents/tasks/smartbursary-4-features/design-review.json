@@ -1,32 +1,161 @@
 {
   "verdict": "CHANGES_REQUESTED",
   "findings": {
-    "high": 5,
-    "medium": 7,
-    "nit": 6
+    "high": [
+      {
+        "id": 1,
+        "title": "SMTP Configuration Field Name Conflict",
+        "location": "Feature 1, Section 1.1 (config.py)",
+        "description": "Design specifies adding `smtp_enabled: bool = False` to config.py, but the file already contains `email_enabled: bool = True`. This will cause runtime AttributeError when email_service.py checks `settings.smtp_enabled`.",
+        "fix": "Use the existing field name `email_enabled` consistently throughout Feature 1. Update all references in email_service.py to check `settings.email_enabled` not `settings.smtp_enabled`."
+      },
+      {
+        "id": 2,
+        "title": "Missing Bursary Constituency Field in application_out Response",
+        "location": "Feature 3, Section 3.1, constituency_breakdown endpoint",
+        "description": "The `application_out` helper function does NOT include `bursary.constituency` in its return dictionary. Feature 3 endpoints assume this field is available, which will cause data inconsistencies in reports.",
+        "fix": "Update `application_out` function in main.py to include `\"constituency\": a.bursary.constituency` in the returned dict."
+      },
+      {
+        "id": 3,
+        "title": "Undefined api() Function Behavior for Blob Responses",
+        "location": "Feature 3, Section 3.3 (CSV export)",
+        "description": "The design references downloadReport which expects blob response, but new report endpoints return JSON. The api() helper function's handling of different response types is not verified.",
+        "fix": "Verify the api() helper function in api.js supports both JSON and blob responses appropriately. Document in design that existing /reports/applications.csv returns StreamingResponse (blob) while new report endpoints return JSON."
+      },
+      {
+        "id": 4,
+        "title": "Missing Filter Implementation: Reviewer Constituency Filtering",
+        "location": "Feature 3, Section 3.1, all report endpoints",
+        "description": "Report endpoints include reviewer constituency filtering but don't specify what happens when user.constituency is empty/None for a reviewer.",
+        "fix": "Add validation: If reviewer has no constituency, return all applications OR return empty set OR return 400 error. Document the expected behavior explicitly in each report endpoint."
+      },
+      {
+        "id": 5,
+        "title": "Ambiguous Email Notification Trigger Logic",
+        "location": "Feature 1, Section 1.3, Status update integration",
+        "description": "Design states 'Send for major statuses only' but integration code unconditionally calls send_status_changed for EVERY status change. It's unclear whether the function should internally filter or the caller should filter.",
+        "fix": "Specify in send_status_changed function implementation: Check if new_status is in notifiable_statuses list [\"Approved\", \"Rejected\", \"Disbursed\", \"Additional Information Required\"] and return early if not."
+      },
+      {
+        "id": 6,
+        "title": "Unspecified Error Handling: Date Range Validation",
+        "location": "Feature 3, Section 3.1, reports_overview endpoint",
+        "description": "Design states 'Invalid date range (end before start): return 400' but the endpoint implementation does NOT include this validation logic.",
+        "fix": "Add explicit validation at the start of reports_overview: if start_date and end_date and end_date < start_date: raise HTTPException(400, \"End date must be after start date\")"
+      },
+      {
+        "id": 7,
+        "title": "Missing Sort Parameter Validation in Feature 4",
+        "location": "Feature 4, Section 4.1, list_applications enhancement",
+        "description": "Design states 'Invalid sort_by: default to date_desc' but does not implement validation check. Malformed sort_by values could cause SQL query issues.",
+        "fix": "Add explicit validation before conditional logic: VALID_SORTS = [\"date_desc\", \"date_asc\", \"amount_desc\", \"amount_asc\", \"name_asc\", \"name_desc\"]; if sort_by not in VALID_SORTS: sort_by = \"date_desc\""
+      }
+    ],
+    "medium": [
+      {
+        "id": 8,
+        "title": "Incomplete Feature: Deadline Admin Warning",
+        "location": "Feature 2, Section 2.2, Validation Logic",
+        "description": "Design mentions warning admin when moving deadline to past date with active applications, but this logic is not implemented in update_bursary endpoint.",
+        "fix": "Add implementation in update_bursary or remove this requirement from the design as out-of-scope."
+      },
+      {
+        "id": 9,
+        "title": "Missing Index Recommendations",
+        "location": "Feature 3, Cross-Cutting Concerns",
+        "description": "Design mentions future indexes but Application.submitted_at (heavily queried in Feature 3) does NOT have an index. No data volume threshold specified.",
+        "fix": "Clarify: Application.status already has index. Specify: 'If dataset exceeds 500 applications, add index to Application.submitted_at'. Add to migration checklist."
+      },
+      {
+        "id": 10,
+        "title": "Reviewer Notification Logic Gap",
+        "location": "Feature 1, Section 1.3, Reviewer notification on submission",
+        "description": "Design doesn't specify: (1) What happens if bursary has no constituency? (2) What if no reviewers found? (3) Should email send happen after DB commit?",
+        "fix": "Add null check: if b.constituency: before querying reviewers. Document: 'If bursary has no constituency or no reviewers found, skip reviewer notifications'. Move email sending AFTER db.commit()."
+      },
+      {
+        "id": 11,
+        "title": "Frontend Filter State Management Inconsistency",
+        "location": "Feature 4, Section 4.1, ApplicationsPage enhancement",
+        "description": "Design shows BOTH backend API filtering (fetchFilteredApplications) AND client-side filtering (useMemo) which will cause double filtering and potential infinite loops.",
+        "fix": "Choose ONE approach: (Recommended) Backend filtering only - Refactor parent component to pass filter params to API call, remove client-side filtering. Update design to show parent component changes."
+      },
+      {
+        "id": 12,
+        "title": "Missing CSS Variable Definitions",
+        "location": "Feature 2, Section 2.3; Feature 4, Section 4.2",
+        "description": "Added CSS references undefined variables: var(--yellow-bg), var(--yellow), var(--yellow-dark). Not verified if these exist in current styles.css.",
+        "fix": "Verify these CSS variables exist in current styles.css, OR add their definitions to design: :root { --yellow: #f59e0b; --yellow-bg: #fffbeb; --yellow-dark: #b45309; }"
+      },
+      {
+        "id": 13,
+        "title": "Incomplete ReportsPage Component Integration",
+        "location": "Feature 3, Section 3.2, Navigation Integration",
+        "description": "Existing ReportsPage has signature {applications,download,busy} but design's new ReportsPage has {busy, run}. Not specified if old component should be replaced or renamed.",
+        "fix": "Clarify: Rename old ReportsPage to ReportsPageOld, specify new ReportsPage replaces the old one entirely. Update route call to match new signature."
+      }
+    ],
+    "nit": [
+      {
+        "id": 14,
+        "title": "Inconsistent Email Field Naming",
+        "description": "Design refers to 'applicant email' but User model field is just 'email'. application_out creates alias 'applicant_email'. Terminology inconsistent but not wrong."
+      },
+      {
+        "id": 15,
+        "title": "Hardcoded Year in Application Number",
+        "description": "Application numbers use datetime.now().year. Unclear if count resets annually is intentional. Not a blocker."
+      },
+      {
+        "id": 16,
+        "title": "Missing CORS Origin for SMTP Settings",
+        "description": "Design doesn't explicitly protect SMTP credentials from API exposure. Should add to security section."
+      },
+      {
+        "id": 17,
+        "title": "Timeline Chart Accessibility",
+        "description": "Timeline chart uses div elements with title attributes, not accessible to screen readers. Should note accessibility limitations."
+      },
+      {
+        "id": 18,
+        "title": "Missing Error Boundary for ReportsPage",
+        "description": "If any of four parallel API calls fail, user experience is poor. Should add error state and display."
+      },
+      {
+        "id": 19,
+        "title": "Undefined run Helper in ReportsPage",
+        "description": "New ReportsPage receives run prop but doesn't use it—calls api() directly. Inconsistent with app's error handling pattern."
+      },
+      {
+        "id": 20,
+        "title": "Duplicate downloadReport Function Definition",
+        "description": "Grep results suggest downloadReport may be defined twice. Should verify in implementation."
+      }
+    ]
   },
-  "reviewDoc": "design-review.md",
-  "summary": "5 HIGH and 7 MEDIUM findings block approval. Critical issues: missing allocated_amount field for per-application disbursement tracking (user requirement from message 4), ambiguous error logging, unverified Chart.js integration path, schema compatibility gaps, illogical constituency breakdown access control, timezone discrepancies in deadline enforcement, disconnected frontend-backend filter implementation, missing input validation, and HTML injection risks in email templates.",
-  "mustFix": [
-    "Add Application.allocated_amount field with migration and update reports calculations",
-    "Specify explicit error logging format to prevent credential exposure",
-    "Verify index.html location or switch to npm-based Chart.js import",
-    "Verify ApplicationOut schema matches application_out() return structure",
-    "Fix constituency_breakdown endpoint access control for reviewers",
-    "Resolve timezone handling for deadline enforcement consistency",
-    "Connect frontend filter state changes to backend API calls with query params",
-    "Add case-insensitive collation for constituency/name sorting",
-    "Return 400 errors for invalid date formats instead of silent ignore",
-    "Add URL query param persistence to BursariesPage filters",
-    "Add HTML escaping to email template user inputs",
-    "Filter inactive users from reviewer notification query"
+  "conflictingSections": [
+    {
+      "id": 21,
+      "title": "Filter Implementation Strategy Conflict",
+      "sections": "Feature 4, Section 4.1 vs 4.2",
+      "description": "Design shows backend filtering enhancement (4.1) but frontend uses client-side filtering (4.2). Backend code written but frontend doesn't use it.",
+      "resolution": "Commit to ONE approach. Recommended: Use backend filtering and remove client-side filtering code from design."
+    },
+    {
+      "id": 22,
+      "title": "User Requirement Not Addressed",
+      "sections": "Original Request message #1 vs Design",
+      "description": "User requested 'it should not show amount unless it is allowed by admins at respective constituencies' suggesting constituency-level control, but design only addresses bursary-level show_amount field.",
+      "resolution": "Clarify with user whether: (1) Current bursary-level show_amount is sufficient, OR (2) A new feature is needed for constituency-scoped admin permissions. If latter, scope separately."
+    }
   ],
-  "recommendedOrder": [
-    "HIGH #1 - allocated_amount field (blocks reports accuracy and user requirement)",
-    "HIGH #2 - error logging specification (security concern)",
-    "MEDIUM #7 - frontend-backend filter coordination (feature broken)",
-    "MEDIUM #6 - timezone handling (prevents application rejection bugs)",
-    "HIGH #3, #4, #5 - remaining HIGH findings",
-    "MEDIUM findings in order of impact"
-  ]
+  "summary": {
+    "highCount": 7,
+    "mediumCount": 6,
+    "nitCount": 7,
+    "conflictsCount": 2,
+    "totalBlockers": 13
+  },
+  "reviewDoc": "c:/dev/SmartBursary-Complete/SmartBursary-Complete/.agents/tasks/smartbursary-4-features/design-review.md"
 }
