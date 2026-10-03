@@ -43,3 +43,13 @@
 :root[data-theme="dark"] .upload-doc-btn:hover{background:#1f3228;border-color:var(--green)}
 :root[data-theme="dark"] .req-badge{background:#3a2e0b;color:#f5c84c}
 @media(max-width:900px){.profile-layout{grid-template-columns:1fr}.profile-aside{position:static;order:-1}}
+.bursary-filters{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.bursary-filters .searchbox{flex:1;min-width:250px}
+.constituency-select{min-width:180px}
+.constituency-select select{padding-left:8px}
+.clear-filter{display:flex;align-items:center;gap:5px;border:1px solid var(--line);background:#fff;color:var(--mute);border-radius:8px;padding:8px 12px;font-size:.78rem;cursor:pointer;transition:all .15s}
+.clear-filter:hover{background:#f5f8f5;color:var(--green);border-color:var(--green)}
+.clear-filter svg{flex-shrink:0}
+.constituency-badge{display:inline-flex;align-items:center;gap:5px;background:#f0f5f1;border:1px solid #e0e8e2;color:#53685b;border-radius:6px;padding:4px 8px;font-size:.68rem;font-weight:700;margin-bottom:10px}
+.constituency-badge svg{width:12px;height:12px;color:var(--green)}
+@media(max-width:768px){.bursary-filters{flex-direction:column;align-items:stretch}.bursary-filters .searchbox{min-width:100%}.constituency-select{width:100%}}

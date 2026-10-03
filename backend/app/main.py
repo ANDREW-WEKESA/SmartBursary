@@ -41,7 +41,7 @@ def audit(db: Session, actor: User | None, action: str, entity_type="", entity_i
     db.add(AuditLog(actor_id=actor.id if actor else None, actor_name=actor.full_name if actor else "System", action=action, entity_type=entity_type, entity_id=str(entity_id), details=details))
 
 def bursary_out(b: Bursary):
-    return {"id":b.id,"name":b.name,"description":b.description,"eligibility":b.eligibility,"amount_kes":b.amount_kes,"deadline":b.deadline,"required_documents":json.loads(b.required_documents or "[]"),"active":b.active}
+    return {"id":b.id,"name":b.name,"description":b.description,"eligibility":b.eligibility,"constituency":b.constituency,"amount_kes":b.amount_kes,"deadline":b.deadline,"required_documents":json.loads(b.required_documents or "[]"),"active":b.active}
 
 def application_out(a: Application):
     return {"id":a.id,"application_number":a.application_number,"applicant_id":a.applicant_id,"applicant_name":a.applicant.full_name,"applicant_email":a.applicant.email,"bursary_id":a.bursary_id,"bursary_name":a.bursary.name,"amount_kes":a.bursary.amount_kes,"institution":a.institution,"student_number":a.student_number,"national_id":a.national_id,"monthly_household_income":a.monthly_household_income,"household_size":a.household_size,"course":a.course,"year_of_study":a.year_of_study,"reason":a.reason,"status":a.status,"priority_score":a.priority_score,"financial_need":a.financial_need,"education_need":a.education_need,"duplicate_risk":a.duplicate_risk,"reviewer_comment":a.reviewer_comment,"submitted_at":a.submitted_at,"updated_at":a.updated_at,"documents":a.documents}
@@ -82,7 +82,7 @@ def get_profile(db: Session = Depends(get_db), user: User = Depends(current_user
     return user_with_docs
 
 @app.patch("/api/profile", response_model=ProfileOut)
-def update_profile(request: Request, db: Session = Depends(get_db), user: User = Depends(current_user)):
+async def update_profile(request: Request, db: Session = Depends(get_db), user: User = Depends(current_user)):
     # Get raw JSON data without validation
     try:
         data = await request.json()
@@ -243,15 +243,26 @@ def create_staff_user(data: StaffUserIn, db: Session = Depends(get_db), user: Us
     return staff_user
 
 @app.get("/api/bursaries", response_model=list[BursaryOut])
-def list_bursaries(include_inactive: bool = False, db: Session = Depends(get_db), user: User = Depends(current_user)):
+def list_bursaries(include_inactive: bool = False, constituency: str = "", search: str = "", db: Session = Depends(get_db), user: User = Depends(current_user)):
     q = select(Bursary).order_by(Bursary.deadline)
     if not include_inactive or user.role == "applicant": q = q.where(Bursary.active.is_(True))
+    if constituency.strip():
+        q = q.where(Bursary.constituency.ilike(f"%{constituency.strip()}%"))
+    if search.strip():
+        search_term = f"%{search.strip()}%"
+        q = q.where(or_(Bursary.name.ilike(search_term), Bursary.description.ilike(search_term), Bursary.eligibility.ilike(search_term), Bursary.constituency.ilike(search_term)))
     return [bursary_out(x) for x in db.scalars(q).all()]
+
+@app.get("/api/bursaries/constituencies")
+def get_constituencies(db: Session = Depends(get_db)):
+    """Get list of all unique constituencies with bursary count"""
+    results = db.execute(select(Bursary.constituency, func.count(Bursary.id).label('count')).where(Bursary.active.is_(True)).group_by(Bursary.constituency)).fetchall()
+    return [{"constituency": r[0] or "General", "count": r[1]} for r in results if r[0]]
 
 @app.post("/api/bursaries", response_model=BursaryOut, status_code=201)
 def create_bursary(data: BursaryIn, db: Session = Depends(get_db), user: User = Depends(require_roles("admin"))):
     if db.scalar(select(Bursary.id).where(Bursary.name == data.name)): raise HTTPException(409,"A bursary with this name already exists")
-    b=Bursary(name=data.name,description=data.description,eligibility=data.eligibility,amount_kes=data.amount_kes,deadline=data.deadline,required_documents=json.dumps(data.required_documents),active=data.active)
+    b=Bursary(name=data.name,description=data.description,eligibility=data.eligibility,amount_kes=data.amount_kes,deadline=data.deadline,required_documents=json.dumps(data.required_documents),active=data.active,constituency=data.constituency)
     db.add(b);db.flush();audit(db,user,"Created bursary","Bursary",b.id,b.name);db.commit();db.refresh(b);return bursary_out(b)
 
 @app.patch("/api/bursaries/{bursary_id}", response_model=BursaryOut)

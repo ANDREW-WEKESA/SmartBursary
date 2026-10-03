@@ -68,13 +68,14 @@ class BursaryIn(BaseModel):
     name: str = Field(min_length=3, max_length=180)
     description: str = ""
     eligibility: str = ""
+    constituency: str = ""
     amount_kes: int = Field(ge=0)
     deadline: date
     required_documents: list[str] = []
     active: bool = True
 
 class BursaryOut(BaseModel):
-    id: int; name: str; description: str; eligibility: str; amount_kes: int; deadline: date; required_documents: list[str]; active: bool
+    id: int; name: str; description: str; eligibility: str; constituency: str; amount_kes: int; deadline: date; required_documents: list[str]; active: bool
 
 class ApplicationIn(BaseModel):
     bursary_id: int

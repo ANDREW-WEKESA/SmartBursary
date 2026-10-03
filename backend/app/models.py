@@ -46,6 +46,7 @@ class Bursary(Base):
     name: Mapped[str] = mapped_column(String(180), unique=True)
     description: Mapped[str] = mapped_column(Text, default="")
     eligibility: Mapped[str] = mapped_column(Text, default="")
+    constituency: Mapped[str] = mapped_column(String(100), default="")
     amount_kes: Mapped[int] = mapped_column(Integer, default=0)
     deadline: Mapped[date] = mapped_column(Date)
     required_documents: Mapped[str] = mapped_column(Text, default="[]")
