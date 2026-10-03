@@ -53,3 +53,6 @@
 .constituency-badge{display:inline-flex;align-items:center;gap:5px;background:#f0f5f1;border:1px solid #e0e8e2;color:#53685b;border-radius:6px;padding:4px 8px;font-size:.68rem;font-weight:700;margin-bottom:10px}
 .constituency-badge svg{width:12px;height:12px;color:var(--green)}
 @media(max-width:768px){.bursary-filters{flex-direction:column;align-items:stretch}.bursary-filters .searchbox{min-width:100%}.constituency-select{width:100%}}
+
+.constituency-banner{background:#edf5f0;border:1px solid#d4e6db;color:#2c5440;border-radius:12px;padding:14px 17px;margin-bottom:20px;display:flex;align-items:center;gap:11px;font-size:.88rem}.constituency-banner b{color:#0e6b4a}
+:root[data-theme="dark"] .constituency-banner{background:#1a2f25;border-color:#2d4d3c;color:#b8d9c6}
