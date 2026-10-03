@@ -1,0 +1,35 @@
+{
+  "id": "FEAT-003",
+  "type": "feat",
+  "description": "Implement constituency-filtered dashboards for reviewers. When a user with role='reviewer' has a constituency assigned, filter their applications list (GET /api/applications) and dashboard stats (GET /api/dashboard/stats) to show only applications for bursaries in their constituency. Admin users see all applications (no filter). Add a visual banner on the reviewer dashboard and applications page showing 'Your Constituency: [Name]'. Add constituency badge to application cards/rows.",
+  "status": "pending",
+  "steps": [
+    "In backend/app/main.py, modify the list_applications function (GET /api/applications endpoint, around line ~214). After the existing role-based filter 'if user.role == \"applicant\"', add: 'elif user.role == \"reviewer\" and user.constituency: query = query.join(Application.bursary).where(Bursary.constituency == user.constituency)'. This joins the Bursary table and filters by matching constituency. Admin users skip this filter and see all.",
+    "In backend/app/main.py, modify the dashboard_stats function (GET /api/dashboard/stats endpoint, around line ~245). Add the same constituency filter for reviewers: after the existing count queries, wrap each in an if/else: 'if user.role == \"reviewer\" and user.constituency: base_query = select(Application).join(Application.bursary).where(Bursary.constituency == user.constituency); total = db.scalar(select(func.count()).select_from(base_query.subquery())); [apply same filter to all status counts and duplicate_flags count]; bursaries = db.scalar(select(func.count(Bursary.id)).where(Bursary.constituency == user.constituency, Bursary.active.is_(True)))'. For admin or reviewer without constituency, use existing unfiltered queries.",
+    "In frontend/src/App.jsx, locate the Dashboard component (around line with PageHeading 'Good day, administrator'). After the PageHeading and before the stat-grid, add: {user.constituency && <div className=\"notice\" style={{marginBottom: '20px', background: 'var(--green-soft)', borderColor: 'var(--green)', color: 'var(--green)'}}><MapPin size={18}/><span><b>Your Constituency:</b> {user.constituency}</span></div>}. Import MapPin from lucide-react if not already imported.",
+    "In frontend/src/App.jsx, locate the ApplicationsPage component. Add the same constituency banner after the PageHeading (around where the toolbar is) if staff && user.constituency: {staff && user.constituency && <div className=\"notice\" style={{marginBottom: '18px', background: 'var(--green-soft)', borderColor: 'var(--green)', color: 'var(--green)'}}><MapPin size={18}/><span><b>Filtering by constituency:</b> {user.constituency}</span></div>}",
+    "In frontend/src/App.jsx, in the ApplicationsPage table rows (tbody tr), after the bursary name td, add a new td (only for staff view) that shows the constituency badge: {staff && <td><span className=\"badge\" style={{fontSize: '.7rem'}}><MapPin size={11} style={{marginRight: '4px', verticalAlign: 'middle'}}/>{a.bursary?.constituency || 'General'}</span></td>}. Add corresponding <th>Constituency</th> in the thead row (only when staff is true).",
+    "Verify that application_out function in backend/app/main.py includes bursary object with constituency field. If not, modify application_out to return bursary_constituency: a.bursary.constituency in the returned dict, and update ApplicationOut schema in schemas.py to include bursary_constituency: str field."
+  ],
+  "acceptance_criteria": [
+    "GET /api/applications as a reviewer with constituency='Webuye East' returns only applications for bursaries with constituency='Webuye East'",
+    "GET /api/applications as admin returns all applications regardless of constituency",
+    "GET /api/applications as reviewer without constituency assigned returns all applications",
+    "GET /api/dashboard/stats as reviewer with constituency returns counts scoped to that constituency only",
+    "GET /api/dashboard/stats as admin returns global counts",
+    "Dashboard page (for reviewers with constituency) shows 'Your Constituency: [Name]' banner at the top",
+    "Applications page (for reviewers with constituency) shows 'Filtering by constituency: [Name]' banner",
+    "Application table rows in staff view show constituency badge/column with the bursary's constituency name"
+  ],
+  "verification": [
+    "Start backend and frontend servers",
+    "Create a reviewer account via POST /api/admin/users with constituency='Webuye East'",
+    "Login as that reviewer, navigate to Dashboard, verify banner shows 'Your Constituency: Webuye East'",
+    "Navigate to Applications page, verify banner appears and only applications for Webuye East bursaries are shown",
+    "Check dashboard stats, verify counts reflect only Webuye East applications",
+    "Login as admin, verify no constituency banner appears and all applications are visible",
+    "Verify application rows in staff view show constituency badge with bursary constituency name"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

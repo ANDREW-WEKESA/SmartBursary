@@ -1,0 +1,34 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Implement bursary open/close toggle API endpoint and frontend UI. The Bursary model already has an 'active' boolean field (models.py line 56), but there is no dedicated endpoint to toggle it. Add PATCH /api/bursaries/{id}/toggle endpoint (admin-only) that flips the active field and logs the change. In frontend App.jsx, add a toggle button to each bursary card in the BursariesPage component (visible only when staff=true). Update visual indicators: 'Open'/'Closed' badge based on active status, and filter closed bursaries from applicant view.",
+  "status": "pending",
+  "steps": [
+    "Add PATCH /api/bursaries/{bursary_id}/toggle endpoint in backend/app/main.py after the existing PATCH /api/bursaries/{bursary_id} endpoint. Use Depends(require_roles('admin')) for auth. Retrieve bursary by ID, toggle b.active = not b.active, create audit log entry with action 'Toggled bursary status', commit, return bursary_out(b).",
+    "In backend/app/main.py list_bursaries endpoint (GET /api/bursaries), ensure the existing logic that filters by active field for applicants remains: 'if not include_inactive or user.role == \"applicant\": q = q.where(Bursary.active.is_(True))' (this already exists at line ~143, verify it works correctly).",
+    "In frontend/src/App.jsx, locate the BursariesPage component and find the program-card rendering inside the program-grid div (around line in the map over list). The card already has a Badge showing Open/Closed based on deadline. Change this badge logic to use b.active: replace the deadline-based ternary with {b.active ? 'Open' : 'Closed'}, tone={b.active ? 'success' : 'danger'}.",
+    "In the same program-card div in BursariesPage, add a toggle button immediately after the Badge (still in program-card-top div): {staff && <button className=\"icon-btn\" onClick={async (e) => { e.stopPropagation(); await run(async () => { await api(`/bursaries/${b.id}/toggle`, {method: 'PATCH'}); await refresh(); await loadConstituencies(); }); }} title={b.active ? 'Close applications' : 'Open applications'}>{b.active ? <X size={16}/> : <Plus size={16}/>}</button>}. This shows X icon when open (to close it), Plus when closed (to open it).",
+    "Test the toggle: as admin, click the toggle button on a bursary card, verify badge changes from Open to Closed or vice versa. Verify audit log records the toggle action with correct bursary name and timestamp. Verify applicant view no longer shows closed bursaries."
+  ],
+  "acceptance_criteria": [
+    "PATCH /api/bursaries/{id}/toggle endpoint exists and is admin-only",
+    "Calling the toggle endpoint flips the active field from true to false or false to true",
+    "Audit log entry is created on each toggle with action 'Toggled bursary status' and bursary name in details",
+    "Bursary cards in staff view show 'Open' badge when active=true, 'Closed' badge when active=false",
+    "Staff view shows toggle button on each bursary card (X icon when open, Plus icon when closed)",
+    "Clicking toggle button immediately updates the badge and active status",
+    "Applicant view (role='applicant') does NOT show bursaries with active=false",
+    "Admin/reviewer view can see all bursaries regardless of active status (controlled by include_inactive parameter)"
+  ],
+  "verification": [
+    "Start backend and frontend servers",
+    "Login as admin, navigate to Bursary programs page",
+    "Click toggle button on an Open bursary, verify badge changes to Closed",
+    "Click toggle button again, verify badge changes back to Open",
+    "Check backend audit logs via GET /api/audit, verify 'Toggled bursary status' entries appear",
+    "Login as applicant in a different browser/incognito window, navigate to bursaries page, verify closed bursaries are not displayed",
+    "Login as admin again, verify closed bursaries still appear in the list with 'Closed' badge"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

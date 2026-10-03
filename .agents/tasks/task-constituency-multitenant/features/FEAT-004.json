@@ -1,0 +1,42 @@
+{
+  "id": "FEAT-004",
+  "type": "feat",
+  "description": "Build staff management UI for admins to view and create staff accounts with constituency assignments. Add a new 'Staff' or 'Team' page in the admin navigation that lists all admin and reviewer users with their assigned constituencies. Add a form to create new staff accounts with fields: full_name, email, password, role (admin/reviewer dropdown), constituency (dropdown populated from distinct bursary constituencies). Backend: implement GET /api/staff to list staff users (admin+reviewer roles only) and ensure POST /api/admin/users properly saves constituency (already implemented in FEAT-001).",
+  "status": "pending",
+  "steps": [
+    "In backend/app/main.py, add GET /api/staff endpoint after the existing POST /api/admin/users endpoint (around line ~141). Use Depends(require_roles('admin')) for auth. Query: 'staff_users = db.scalars(select(User).where(User.role.in_([\"admin\", \"reviewer\"])).order_by(User.full_name)).all()'. Return list of dicts: '[{\"id\": u.id, \"full_name\": u.full_name, \"email\": u.email, \"role\": u.role, \"constituency\": u.constituency or \"\", \"active\": u.active} for u in staff_users]'.",
+    "In frontend/src/App.jsx, add 'Staff' page to the staff navigation items. Locate the navItems definition (around line with navItems=staff?[...]) and add ['staff', 'Team', Users] to the staff array (before 'reports').",
+    "In frontend/src/App.jsx, after the existing page conditionals (after page==='reports'), add: {page==='staff' && staff && <StaffPage staffList={staffList} setStaffList={setStaffList} busy={busy} run={run} refresh={refresh} constituencies={constituencies} setConstituencies={setConstituencies}/>}. Add state for staffList and constituencies at the top of the App component: const [staffList, setStaffList] = useState([]); const [constituencies, setConstituencies] = useState([]);",
+    "In the refresh function in App.jsx, add fetch for staff list and constituencies if user is admin: 'if (getSavedUser()?.role === \"admin\") { setStaffList(await api(\"/staff\")); const constData = await api(\"/bursaries/constituencies\"); setConstituencies(constData.map(c => c.constituency)); }'",
+    "In frontend/src/App.jsx, define the StaffPage component function before the return statement of App (after the existing page component functions like ReportsPage). Structure: function StaffPage({staffList, setStaffList, busy, run, refresh, constituencies, setConstituencies}) { const [showCreate, setShowCreate] = useState(false); async function createStaff(e) { e.preventDefault(); const fd = new FormData(e.currentTarget); await run(async () => { await api('/admin/users', {method: 'POST', body: {full_name: fd.get('full_name'), email: fd.get('email'), password: fd.get('password'), role: fd.get('role'), constituency: fd.get('constituency')}}); setShowCreate(false); await refresh(); }); } return <>...</>; }",
+    "StaffPage JSX structure: <PageHeading eyebrow=\"TEAM MANAGEMENT\" title=\"Staff & Reviewers\" desc=\"Manage admin and reviewer accounts with constituency assignments.\" action={<Button onClick={()=>setShowCreate(!showCreate)}><Plus size={17}/> Add staff member</Button>}/>. If showCreate, render a form panel similar to create-form in BursariesPage: fields for full_name (input required), email (input type=email required), password (input type=password minLength=12 required placeholder='Minimum 12 characters'), role (select: option admin, option reviewer), constituency (select with option value='' 'No assignment', then constituencies.map option). Form actions: submit button 'Create account', cancel button.",
+    "After the create form (if shown), render the staff list in a table panel: <div className=\"panel table-panel\"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Constituency</th><th>Status</th></tr></thead><tbody>{staffList.map(s => <tr key={s.id}><td><b>{s.full_name}</b></td><td>{s.email}</td><td><Badge tone={s.role === 'admin' ? 'success' : 'info'}>{s.role}</Badge></td><td>{s.constituency ? <span className=\"badge\" style={{fontSize:'.72rem'}}><MapPin size={11} style={{marginRight:'4px',verticalAlign:'middle'}}/>{s.constituency}</span> : <span className=\"muted\" style={{fontSize:'.78rem'}}>—</span>}</td><td><Badge tone={s.active ? 'success' : 'danger'}>{s.active ? 'Active' : 'Disabled'}</Badge></td></tr>)}</tbody></table></div>. If staffList is empty, show <Empty title=\"No staff accounts\" desc=\"Create admin and reviewer accounts to manage bursary review.\"/>",
+    "Test: login as admin, navigate to Team page, verify staff list shows existing admin/reviewer users with their constituencies. Click 'Add staff member', fill form with all fields, submit, verify new user appears in the list and can login."
+  ],
+  "acceptance_criteria": [
+    "GET /api/staff endpoint exists and returns list of admin and reviewer users with id, full_name, email, role, constituency, active fields",
+    "GET /api/staff is admin-only (returns 403 for non-admin users)",
+    "Frontend has 'Team' navigation item in admin sidebar",
+    "Staff page displays table of all admin and reviewer accounts with columns: Name, Email, Role, Constituency, Status",
+    "Staff page has 'Add staff member' button that shows a creation form",
+    "Creation form has fields: full_name, email, password (min 12 chars), role (dropdown: admin/reviewer), constituency (dropdown: constituencies from bursaries + 'No assignment')",
+    "Submitting the form creates a new staff user via POST /api/admin/users and refreshes the staff list",
+    "Created staff users appear in the staff list immediately",
+    "Constituency column shows badge with constituency name if assigned, '—' if not assigned",
+    "Role column shows badge (admin=success green, reviewer=info blue)",
+    "Status column shows Active/Disabled badge based on active field"
+  ],
+  "verification": [
+    "Start backend and frontend servers",
+    "Login as admin, verify 'Team' appears in sidebar navigation",
+    "Click Team, verify staff page loads and shows existing admin user in table",
+    "Click 'Add staff member', verify form appears with all required fields",
+    "Fill form: full_name='John Reviewer', email='john@test.com', password='SecurePass123!', role='reviewer', constituency='Webuye East'",
+    "Submit form, verify no error and form closes",
+    "Verify 'John Reviewer' appears in the staff table with role=reviewer badge, constituency='Webuye East' badge, status=Active",
+    "Logout, login as john@test.com with the password, verify login succeeds and user has reviewer role",
+    "Check GET /api/staff endpoint in browser DevTools or API docs, verify it returns the staff list with all fields"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

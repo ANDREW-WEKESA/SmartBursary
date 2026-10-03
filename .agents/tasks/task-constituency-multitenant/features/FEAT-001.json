@@ -1,0 +1,31 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Add constituency field to User model and create database migration script. The User model in backend/app/models.py currently lacks a constituency column, which is required for constituency-scoped reviewer dashboards. Add a nullable String constituency column to the User model using SQLAlchemy Mapped annotations (matching the pattern in the existing model). Create a standalone migration script at backend/add_user_constituency.py that adds the column to existing databases using ALTER TABLE, following SQLite and PostgreSQL syntax patterns.",
+  "status": "pending",
+  "steps": [
+    "Add 'constituency: Mapped[str | None] = mapped_column(String(100), nullable=True, default=None)' to the User class in backend/app/models.py, after the 'role' field",
+    "Create backend/add_user_constituency.py migration script that: imports sqlalchemy and database engine from app.database, uses raw SQL 'ALTER TABLE users ADD COLUMN constituency VARCHAR(100)' with try/except to handle column-already-exists error, prints success/skip message",
+    "Update the StaffUserIn schema in backend/app/schemas.py to add optional 'constituency: str = \"\"' field",
+    "Update the UserOut schema in backend/app/schemas.py to include 'constituency: str' field so API responses expose the new column",
+    "Modify POST /api/admin/users endpoint in backend/app/main.py to read data.constituency from StaffUserIn and set it on the staff_user object during creation",
+    "Add audit log entry in POST /api/admin/users that includes the constituency value in the details parameter when a staff user is created with a constituency assignment"
+  ],
+  "acceptance_criteria": [
+    "User model has constituency column defined with nullable String(100) type",
+    "Migration script backend/add_user_constituency.py exists and can be run with 'cd backend && python add_user_constituency.py' without error",
+    "Running migration script on existing database adds the column; running it again prints 'Column already exists' without error",
+    "StaffUserIn schema accepts constituency field in POST /api/admin/users payload",
+    "UserOut schema returns constituency field in GET /api/auth/me response",
+    "Creating a staff user via POST /api/admin/users with constituency value stores and returns that value"
+  ],
+  "verification": [
+    "Start backend server: cd backend && uvicorn app.main:app --reload --port 8000",
+    "Run migration script: cd backend && python add_user_constituency.py (should print success)",
+    "Run migration script again: cd backend && python add_user_constituency.py (should print already exists)",
+    "Test API manually: POST /api/admin/users with admin token, include 'constituency' in payload, verify response includes the constituency value",
+    "Test API manually: GET /api/auth/me as that created user, verify constituency appears in response"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

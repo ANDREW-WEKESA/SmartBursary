@@ -1,0 +1,7 @@
+{
+  "task_id": "task-constituency-multitenant",
+  "task_description": "Add constituency-based multi-tenancy and bursary activation controls to SmartBursary",
+  "status": "pending",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003", "FEAT-004"],
+  "blocked_reason": null
+}

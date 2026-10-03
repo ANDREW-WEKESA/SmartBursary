@@ -272,6 +272,45 @@ def update_bursary(bursary_id:int,data:BursaryIn,db:Session=Depends(get_db),user
     for k,v in data.model_dump().items(): setattr(b,k,json.dumps(v) if k=="required_documents" else v)
     audit(db,user,"Updated bursary","Bursary",b.id,b.name);db.commit();db.refresh(b);return bursary_out(b)
 
+@app.patch("/api/bursaries/{bursary_id}/toggle")
+def toggle_bursary(bursary_id: int, db: Session = Depends(get_db), user: User = Depends(require_roles("admin"))):
+    b = db.get(Bursary, bursary_id)
+    if not b: raise HTTPException(404, "Bursary not found")
+    b.active = not b.active
+    action = "Opened" if b.active else "Closed"
+    audit(db, user, f"{action} bursary applications", "Bursary", b.id, b.name)
+    db.commit()
+    db.refresh(b)
+    return bursary_out(b)
+
+@app.get("/api/staff", response_model=list[UserOut])
+def list_staff(db: Session = Depends(get_db), user: User = Depends(require_roles("admin"))):
+    """List all staff users (admin and reviewer)"""
+    staff = db.scalars(select(User).where(User.role.in_(["admin", "reviewer"])).order_by(User.full_name)).all()
+    return staff
+
+@app.post("/api/staff", response_model=UserOut, status_code=201)
+def create_staff_user(data: StaffUserIn, db: Session = Depends(get_db), user: User = Depends(require_roles("admin"))):
+    """Create a new staff user with constituency assignment"""
+    email = str(data.email).lower()
+    if db.scalar(select(User.id).where(User.email == email)):
+        raise HTTPException(409, "An account with this email already exists")
+    staff_user = User(
+        full_name=data.full_name.strip(),
+        email=email,
+        password_hash=hash_password(data.password),
+        role=data.role,
+        constituency=data.constituency,
+        active=True
+    )
+    db.add(staff_user)
+    db.flush()
+    audit(db, user, f"Created {data.role} account", "User", staff_user.id, email)
+    db.commit()
+    db.refresh(staff_user)
+    return staff_user
+
+
 @app.post("/api/applications", response_model=ApplicationOut, status_code=201)
 def submit_application(data:ApplicationIn,db:Session=Depends(get_db),user:User=Depends(current_user)):
     # Check if profile is complete
@@ -304,6 +343,9 @@ def submit_application(data:ApplicationIn,db:Session=Depends(get_db),user:User=D
 def list_applications(q:str="",status_filter:str="",db:Session=Depends(get_db),user:User=Depends(current_user)):
     query=app_query(db)
     if user.role == "applicant": query=query.where(Application.applicant_id==user.id)
+    # Filter by constituency for reviewers
+    elif user.role == "reviewer" and user.constituency:
+        query = query.join(Application.bursary).where(Bursary.constituency == user.constituency)
     if status_filter: query=query.where(Application.status==status_filter)
     if q.strip():
         like=f"%{q.strip()}%"; query=query.join(Application.applicant).where(or_(Application.application_number.ilike(like),Application.institution.ilike(like),Application.student_number.ilike(like),User.full_name.ilike(like)))
@@ -357,9 +399,25 @@ def verify_document(document_id:int,status_value:str=Query(...,alias="status"),d
 
 @app.get("/api/dashboard/stats")
 def dashboard_stats(db:Session=Depends(get_db),user:User=Depends(require_roles("admin","reviewer"))):
-    total=db.scalar(select(func.count(Application.id))) or 0
-    statuses={s:db.scalar(select(func.count(Application.id)).where(Application.status==s)) or 0 for s in sorted(STATUSES)}
-    return {"total":total,"pending":sum(statuses[s] for s in ["Submitted","Under Review","Verification","Additional Information Required","Committee Review"]),"duplicate_flags":db.scalar(select(func.count(Application.id)).where(Application.duplicate_risk=="HIGH")) or 0,"statuses":statuses,"bursaries":db.scalar(select(func.count(Bursary.id)).where(Bursary.active.is_(True))) or 0}
+    # Base query for stats
+    base_query = select(func.count(Application.id))
+    # Filter by constituency for reviewers
+    if user.role == "reviewer" and user.constituency:
+        base_query = base_query.join(Application.bursary).where(Bursary.constituency == user.constituency)
+    
+    total=db.scalar(base_query) or 0
+    statuses={}
+    for s in sorted(STATUSES):
+        status_query = select(func.count(Application.id)).where(Application.status==s)
+        if user.role == "reviewer" and user.constituency:
+            status_query = status_query.join(Application.bursary).where(Bursary.constituency == user.constituency)
+        statuses[s] = db.scalar(status_query) or 0
+    
+    duplicate_query = select(func.count(Application.id)).where(Application.duplicate_risk=="HIGH")
+    if user.role == "reviewer" and user.constituency:
+        duplicate_query = duplicate_query.join(Application.bursary).where(Bursary.constituency == user.constituency)
+    
+    return {"total":total,"pending":sum(statuses[s] for s in ["Submitted","Under Review","Verification","Additional Information Required","Committee Review"]),"duplicate_flags":db.scalar(duplicate_query) or 0,"statuses":statuses,"bursaries":db.scalar(select(func.count(Bursary.id)).where(Bursary.active.is_(True))) or 0}
 
 @app.get("/api/reports/applications.csv")
 def report_csv(db:Session=Depends(get_db),user:User=Depends(require_roles("admin","reviewer"))):

@@ -11,6 +11,7 @@ class User(Base):
     phone: Mapped[str] = mapped_column(String(40), default="")
     password_hash: Mapped[str] = mapped_column(String(255))
     role: Mapped[str] = mapped_column(String(30), default="applicant")
+    constituency: Mapped[str] = mapped_column(String(100), default="")
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     # Profile fields
     profile_complete: Mapped[bool] = mapped_column(Boolean, default=False)

@@ -12,7 +12,7 @@ class LoginIn(BaseModel):
     password: str
 
 class UserOut(BaseModel):
-    id: int; full_name: str; email: EmailStr; phone: str; role: str; profile_complete: bool
+    id: int; full_name: str; email: EmailStr; phone: str; role: str; constituency: str; profile_complete: bool
     model_config = ConfigDict(from_attributes=True)
 
 class ProfileUpdateIn(BaseModel):
@@ -105,3 +105,4 @@ class StaffUserIn(BaseModel):
     email: EmailStr
     password: str = Field(min_length=12, max_length=128)
     role: str = Field(pattern="^(admin|reviewer)$")
+    constituency: str = ""
