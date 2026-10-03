@@ -21,6 +21,7 @@ class ProfileUpdateIn(BaseModel):
     gender: str = ""
     county: str = ""
     sub_county: str = ""
+    constituency: str = ""
     address: str = ""
     guardian_name: str = ""
     guardian_phone: str = ""
@@ -53,7 +54,7 @@ class ProfileDocumentOut(BaseModel):
 class ProfileOut(BaseModel):
     id: int; full_name: str; email: EmailStr; phone: str
     profile_complete: bool
-    date_of_birth: date | None; national_id: str; gender: str; county: str; sub_county: str; address: str
+    date_of_birth: date | None; national_id: str; gender: str; county: str; sub_county: str; constituency: str; address: str
     guardian_name: str; guardian_phone: str; guardian_relationship: str
     institution: str; student_number: str; course: str; year_of_study: str; admission_year: int | None
     monthly_household_income: int; household_size: int

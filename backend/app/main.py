@@ -124,6 +124,7 @@ async def update_profile(request: Request, db: Session = Depends(get_db), user: 
         bool(user.national_id.strip()),
         bool(user.gender.strip()),
         bool(user.county.strip()),
+        bool(user.constituency.strip()),
         bool(user.institution.strip()),
         bool(user.student_number.strip()),
         bool(user.course.strip()),
@@ -246,8 +247,14 @@ def create_staff_user(data: StaffUserIn, db: Session = Depends(get_db), user: Us
 def list_bursaries(include_inactive: bool = False, constituency: str = "", search: str = "", db: Session = Depends(get_db), user: User = Depends(current_user)):
     q = select(Bursary).order_by(Bursary.deadline)
     if not include_inactive or user.role == "applicant": q = q.where(Bursary.active.is_(True))
-    if constituency.strip():
+    
+    # Filter by user's constituency for applicants
+    if user.role == "applicant" and user.constituency:
+        q = q.where(Bursary.constituency == user.constituency)
+    # Allow admin/reviewer to filter manually
+    elif constituency.strip():
         q = q.where(Bursary.constituency.ilike(f"%{constituency.strip()}%"))
+    
     if search.strip():
         search_term = f"%{search.strip()}%"
         q = q.where(or_(Bursary.name.ilike(search_term), Bursary.description.ilike(search_term), Bursary.eligibility.ilike(search_term), Bursary.constituency.ilike(search_term)))
