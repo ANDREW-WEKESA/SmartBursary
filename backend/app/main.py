@@ -726,3 +726,195 @@ def get_reports_overview(db: Session = Depends(get_db), user: User = Depends(req
             for k, v in sorted(bursary_data.items(), key=lambda x: x[1]["total"], reverse=True)
         ]
     }
+
+
+# ========== TEMPORARY SEED ENDPOINT (REMOVE AFTER FIRST USE) ==========
+@app.post("/api/admin/seed-database")
+def seed_database(current: User = Depends(current_user), db: Session = Depends(get_db)):
+    """
+    ONE-TIME endpoint to seed the production database.
+    Only accessible by super admin.
+    """
+    if current.role != "admin":
+        raise HTTPException(403, "Only super admin can seed the database")
+    
+    try:
+        # Import seed logic inline
+        from datetime import date, timedelta
+        import random
+        
+        # Check if already seeded
+        existing_count = db.scalar(select(func.count(User.id)))
+        if existing_count > 5:
+            return {"message": f"Database already has {existing_count} users. Skipping seed.", "status": "skipped"}
+        
+        # Define constituencies
+        constituencies_data = [
+            {"constituency": "Westlands", "county": "Nairobi"},
+            {"constituency": "Dagoretti North", "county": "Nairobi"},
+            {"constituency": "Langata", "county": "Nairobi"},
+            {"constituency": "Mvita", "county": "Mombasa"},
+            {"constituency": "Kisauni", "county": "Mombasa"},
+            {"constituency": "Kisumu East", "county": "Kisumu"},
+            {"constituency": "Kisumu Central", "county": "Kisumu"},
+            {"constituency": "Eldoret East", "county": "Uasin Gishu"},
+            {"constituency": "Eldoret West", "county": "Uasin Gishu"},
+            {"constituency": "Nakuru Town East", "county": "Nakuru"},
+            {"constituency": "Nakuru Town West", "county": "Nakuru"},
+            {"constituency": "Thika Town", "county": "Kiambu"},
+            {"constituency": "Kikuyu", "county": "Kiambu"},
+            {"constituency": "Starehe", "county": "Nairobi"},
+            {"constituency": "Embakasi South", "county": "Nairobi"},
+        ]
+        
+        constituencies = [c["constituency"] for c in constituencies_data]
+        
+        # Create constituency admins and reviewers
+        users_created = 0
+        for const_data in constituencies_data:
+            const = const_data["constituency"]
+            const_slug = const.lower().replace(" ", "")
+            
+            # Admin
+            admin_email = f"admin.{const_slug}@smartbursary.com"
+            if not db.scalar(select(User.id).where(User.email == admin_email)):
+                admin = User(
+                    full_name=f"{const} Administrator",
+                    email=admin_email,
+                    password_hash=hash_password("admin123"),
+                    role="admin",
+                    constituency=const,
+                    phone=f"+2547{random.randint(10000000, 99999999)}",
+                    email_verified=True,
+                    active=True
+                )
+                db.add(admin)
+                users_created += 1
+            
+            # Reviewer
+            reviewer_email = f"reviewer.{const_slug}@smartbursary.com"
+            if not db.scalar(select(User.id).where(User.email == reviewer_email)):
+                reviewer = User(
+                    full_name=f"{const} Reviewer",
+                    email=reviewer_email,
+                    password_hash=hash_password("reviewer123"),
+                    role="reviewer",
+                    constituency=const,
+                    phone=f"+2547{random.randint(10000000, 99999999)}",
+                    email_verified=True,
+                    active=True
+                )
+                db.add(reviewer)
+                users_created += 1
+        
+        db.commit()
+        
+        # Create bursaries
+        bursary_types = [
+            {"name": "Constituency Development Bursary", "amount": 15000, "deadline_days": 45},
+            {"name": "County Education Fund", "amount": 25000, "deadline_days": 30}
+        ]
+        
+        bursaries_created = 0
+        for const in constituencies:
+            for b_type in bursary_types:
+                bursary_name = f"{const} - {b_type['name']}"
+                if not db.scalar(select(Bursary.id).where(Bursary.name == bursary_name)):
+                    bursary = Bursary(
+                        name=bursary_name,
+                        description=f"Financial assistance for {const} constituency students.",
+                        eligibility="Needy student; constituency resident",
+                        constituency=const,
+                        amount_kes=b_type['amount'],
+                        show_amount=True,
+                        deadline=date.today() + timedelta(days=b_type['deadline_days']),
+                        required_documents=json.dumps(["National ID", "Admission letter", "Fee structure"]),
+                        active=True
+                    )
+                    db.add(bursary)
+                    bursaries_created += 1
+        
+        db.commit()
+        
+        # Create applicants and applications
+        first_names = ["John", "Mary", "James", "Grace", "Peter", "Jane", "David", "Sarah", "Michael", "Lucy"]
+        last_names = ["Wanjiku", "Kamau", "Omondi", "Atieno", "Mwangi", "Njeri", "Kimani", "Akinyi", "Otieno", "Wambui"]
+        institutions = ["University of Nairobi", "Kenyatta University", "Moi University", "Technical University of Kenya"]
+        courses = ["Computer Science", "Engineering", "Medicine", "Business Administration", "Education"]
+        
+        applications_created = 0
+        for i in range(45):  # 45 applicants, 3 per constituency
+            const = constituencies[i % len(constituencies)]
+            first = random.choice(first_names)
+            last = random.choice(last_names)
+            email = f"{first.lower()}.{last.lower()}{i}@student.ke"
+            
+            if not db.scalar(select(User.id).where(User.email == email)):
+                applicant = User(
+                    full_name=f"{first} {last}",
+                    email=email,
+                    password_hash=hash_password("student123"),
+                    role="applicant",
+                    constituency=const,
+                    phone=f"+2547{random.randint(10000000, 99999999)}",
+                    email_verified=True,
+                    active=True
+                )
+                db.add(applicant)
+                db.flush()
+                
+                # Create 1-2 applications per applicant
+                const_bursaries = db.scalars(select(Bursary).where(Bursary.constituency == const)).all()
+                for _ in range(random.randint(1, min(2, len(const_bursaries)))):
+                    bursary = random.choice(const_bursaries)
+                    income = random.randint(8000, 50000)
+                    household = random.randint(2, 8)
+                    priority_score = 50 + round((1 - min(income / 60000, 1)) * 35) + (8 if household > 4 else 0)
+                    
+                    application = Application(
+                        applicant_id=applicant.id,
+                        bursary_id=bursary.id,
+                        institution=random.choice(institutions),
+                        course=random.choice(courses),
+                        year_of_study=random.randint(1, 4),
+                        student_number=f"STU/{random.randint(1000, 9999)}/2024",
+                        national_id=f"{random.randint(10000000, 99999999)}",
+                        monthly_household_income=income,
+                        household_size=household,
+                        reason="Need financial assistance for education",
+                        status=random.choice(["Submitted", "Under Review", "Approved"]),
+                        priority_score=priority_score,
+                        financial_need="HIGH" if income < 20000 else "MEDIUM",
+                        education_need="HIGH",
+                        duplicate_risk="LOW"
+                    )
+                    db.add(application)
+                    applications_created += 1
+        
+        db.commit()
+        
+        total_users = db.scalar(select(func.count(User.id)))
+        total_bursaries = db.scalar(select(func.count(Bursary.id)))
+        total_applications = db.scalar(select(func.count(Application.id)))
+        
+        return {
+            "message": "Database seeded successfully!",
+            "status": "success",
+            "summary": {
+                "constituencies": len(constituencies),
+                "users_created": users_created,
+                "bursaries_created": bursaries_created,
+                "applications_created": applications_created,
+                "totals": {
+                    "users": total_users,
+                    "bursaries": total_bursaries,
+                    "applications": total_applications
+                }
+            }
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(500, f"Seeding failed: {str(e)}")
+    finally:
+        db.close()
