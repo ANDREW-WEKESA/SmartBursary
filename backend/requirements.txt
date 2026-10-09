@@ -6,3 +6,8 @@ pydantic-settings>=2.4,<3
 PyJWT>=2.9,<3
 argon2-cffi>=23,<26
 python-multipart>=0.0.9,<1
+
+# Production dependencies
+psycopg2-binary>=2.9,<3
+gunicorn>=21.0,<23
+aiosmtpd>=1.4,<2

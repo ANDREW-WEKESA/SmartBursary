@@ -43,7 +43,16 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(title=settings.app_name, version="1.0.0", description="SmartBursary applications, review and tracking API", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5174","http://127.0.0.1:5174","http://localhost:5175","http://127.0.0.1:5175","http://localhost:5173","http://127.0.0.1:5173"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+
+# CORS Middleware - allows frontend from different domains
+allowed_origins = settings.cors_origins.split(",")
+app.add_middleware(
+    CORSMiddleware, 
+    allow_origins=allowed_origins,
+    allow_credentials=True, 
+    allow_methods=["*"], 
+    allow_headers=["*"]
+)
 
 def audit(db: Session, actor: User | None, action: str, entity_type="", entity_id="", details=""):
     db.add(AuditLog(actor_id=actor.id if actor else None, actor_name=actor.full_name if actor else "System", action=action, entity_type=entity_type, entity_id=str(entity_id), details=details))

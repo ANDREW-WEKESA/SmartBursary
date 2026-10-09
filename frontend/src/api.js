@@ -1,4 +1,5 @@
-const BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8001/api';
+// API Base URL - uses environment variable or defaults to local development
+const BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
 export function getToken(){return localStorage.getItem('sb_token') || '';}
 export function setSession(token,user){localStorage.setItem('sb_token',token);localStorage.setItem('sb_user',JSON.stringify(user));}
 export function clearSession(){localStorage.removeItem('sb_token');localStorage.removeItem('sb_user');}
