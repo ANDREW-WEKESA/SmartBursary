@@ -39,7 +39,7 @@ async def lifespan(app: FastAPI):
         admin_email = os.getenv("ADMIN_EMAIL", "admin@smartbursary.com").lower()
         admin_password = os.getenv("ADMIN_PASSWORD", "ChangeMe123!")
         if not db.scalar(select(User.id).where(User.email == admin_email)):
-            db.add(User(full_name="SmartBursary Administrator", email=admin_email, password_hash=hash_password(admin_password), role="admin", phone="")); db.commit()
+            db.add(User(full_name="SmartBursary Administrator", email=admin_email, password_hash=hash_password(admin_password), role="admin", phone="", email_verified=True, active=True)); db.commit()
     yield
 
 app = FastAPI(title=settings.app_name, version="1.0.0", description="SmartBursary applications, review and tracking API", lifespan=lifespan)
