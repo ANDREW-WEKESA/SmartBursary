@@ -6,14 +6,20 @@ let backendWarmedUp = false;
 async function warmUpBackend() {
   if (backendWarmedUp) return;
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+    
     await fetch(`${import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'}/api/health`, {
       method: 'GET',
-      // Long timeout for cold start
-      signal: AbortSignal.timeout(60000)
+      signal: controller.signal
     });
+    
+    clearTimeout(timeoutId);
     backendWarmedUp = true;
+    console.log('✅ Backend is ready');
   } catch (e) {
-    console.warn('Backend warmup failed:', e);
+    console.warn('Backend warmup attempt:', e.message);
+    // Continue anyway - the actual API call will retry
   }
 }
 
