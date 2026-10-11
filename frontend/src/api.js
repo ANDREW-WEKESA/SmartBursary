@@ -1,5 +1,7 @@
 // API Base URL - uses environment variable or defaults to local development
-const BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
+// Ensure /api is always included
+const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+const BASE = apiUrl.endsWith('/api') ? apiUrl : `${apiUrl}/api`;
 
 // Wake up backend on app load (for cold-start servers like Render free tier)
 let backendWarmedUp = false;
@@ -9,7 +11,7 @@ async function warmUpBackend() {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
     
-    await fetch(`${import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'}/api/health`, {
+    await fetch(`${apiUrl}/api/health`, {
       method: 'GET',
       signal: controller.signal
     });
