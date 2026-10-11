@@ -453,7 +453,7 @@ def list_staff(db: Session = Depends(get_db), user: User = Depends(require_roles
 
 @app.post("/api/staff", status_code=201)
 def create_staff_user(data: StaffUserIn, db: Session = Depends(get_db), user: User = Depends(require_roles("admin"))):
-    """Create a new staff user - requires email verification with OTP"""
+    """Create a new staff user - requires email verification with OTP (auto-verified if email disabled)"""
     email = str(data.email).lower()
     if db.scalar(select(User.id).where(User.email == email)):
         raise HTTPException(409, "An account with this email already exists")
@@ -466,43 +466,66 @@ def create_staff_user(data: StaffUserIn, db: Session = Depends(get_db), user: Us
     if user.constituency and data.role == "admin":
         raise HTTPException(403, "Constituency admins cannot create other admin accounts")
     
-    # Create staff user as INACTIVE until email verified
+    # Check if email is enabled
+    email_verification_required = settings.email_enabled
+    
+    # Create staff user
     staff_user = User(
         full_name=data.full_name.strip(),
         email=email,
         password_hash=hash_password(data.password),
         role=data.role,
         constituency=data.constituency,
-        active=False,  # Inactive until OTP verified
-        email_verified=False  # Requires OTP verification
+        active=not email_verification_required,  # Active immediately if email disabled
+        email_verified=not email_verification_required  # Auto-verified if email disabled
     )
     db.add(staff_user)
     db.flush()
     
-    # Generate and store OTP
-    otp_code = generate_otp()
-    otp_record = EmailOTP(
-        user_id=staff_user.id,
-        email=email,
-        otp_code=otp_code,
-        purpose="staff_account_verification",
-        expires_at=datetime.now(timezone.utc) + timedelta(minutes=10)
-    )
-    db.add(otp_record)
-    
-    # Send OTP email
-    from .email_service import send_staff_account_otp
-    send_staff_account_otp(email, data.full_name, otp_code, data.role)
-    
-    audit(db, user, f"Created {data.role} account (pending verification)", "User", staff_user.id, email)
-    db.commit()
-    
-    return {
-        "message": f"{data.role.title()} account created. Verification code sent to {email}",
-        "email": email,
-        "requires_verification": True,
-        "user_id": staff_user.id
-    }
+    if email_verification_required:
+        # Generate and store OTP
+        otp_code = generate_otp()
+        otp_record = EmailOTP(
+            user_id=staff_user.id,
+            email=email,
+            otp_code=otp_code,
+            purpose="staff_account_verification",
+            expires_at=datetime.now(timezone.utc) + timedelta(minutes=10)
+        )
+        db.add(otp_record)
+        
+        # Send OTP email
+        from .email_service import send_staff_account_otp
+        send_staff_account_otp(email, data.full_name, otp_code, data.role)
+        
+        audit(db, user, f"Created {data.role} account (pending verification)", "User", staff_user.id, email)
+        db.commit()
+        
+        return {
+            "message": f"{data.role.title()} account created. Verification code sent to {email}",
+            "email": email,
+            "requires_verification": True,
+            "user_id": staff_user.id
+        }
+    else:
+        # Email disabled - account ready immediately
+        audit(db, user, f"Created {data.role} account", "User", staff_user.id, email)
+        db.commit()
+        db.refresh(staff_user)
+        
+        return {
+            "message": f"{data.role.title()} account created successfully",
+            "email": email,
+            "requires_verification": False,
+            "user": {
+                "id": staff_user.id,
+                "full_name": staff_user.full_name,
+                "email": staff_user.email,
+                "role": staff_user.role,
+                "constituency": staff_user.constituency,
+                "active": staff_user.active
+            }
+        }
 
 
 @app.post("/api/applications", response_model=ApplicationOut, status_code=201)
