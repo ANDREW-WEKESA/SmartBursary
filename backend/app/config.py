@@ -20,13 +20,13 @@ class Settings(BaseSettings):
     max_upload_mb: int = 5
     
     # Email settings
-    smtp_host: str = "localhost"
-    smtp_port: int = 1025
-    smtp_username: str = ""
-    smtp_password: str = ""
-    smtp_from_email: str = "noreply@smartbursary.com"
-    smtp_from_name: str = "SmartBursary System"
-    email_enabled: bool = True
+    smtp_host: str = os.getenv("SMTP_HOST", "localhost")
+    smtp_port: int = int(os.getenv("SMTP_PORT", "1025"))
+    smtp_username: str = os.getenv("SMTP_USERNAME", "")
+    smtp_password: str = os.getenv("SMTP_PASSWORD", "")
+    smtp_from_email: str = os.getenv("SMTP_FROM_EMAIL", "noreply@smartbursary.com")
+    smtp_from_name: str = os.getenv("SMTP_FROM_NAME", "SmartBursary System")
+    email_enabled: bool = os.getenv("EMAIL_ENABLED", "false").lower() == "true"
     
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
