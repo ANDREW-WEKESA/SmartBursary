@@ -1,10 +1,34 @@
 // API Base URL - uses environment variable or defaults to local development
 const BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
+
+// Wake up backend on app load (for cold-start servers like Render free tier)
+let backendWarmedUp = false;
+async function warmUpBackend() {
+  if (backendWarmedUp) return;
+  try {
+    await fetch(`${import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'}/api/health`, {
+      method: 'GET',
+      // Long timeout for cold start
+      signal: AbortSignal.timeout(60000)
+    });
+    backendWarmedUp = true;
+  } catch (e) {
+    console.warn('Backend warmup failed:', e);
+  }
+}
+
+// Start warming up immediately
+warmUpBackend();
+
 export function getToken(){return localStorage.getItem('sb_token') || '';}
 export function setSession(token,user){localStorage.setItem('sb_token',token);localStorage.setItem('sb_user',JSON.stringify(user));}
 export function clearSession(){localStorage.removeItem('sb_token');localStorage.removeItem('sb_user');}
 export function getSavedUser(){try{return JSON.parse(localStorage.getItem('sb_user')||'null')}catch{return null}}
 export async function api(path, options={}){
+  // Ensure backend is warm before making API calls
+  if (!backendWarmedUp) {
+    await warmUpBackend();
+  }
   const headers = new Headers(options.headers || {});
   if(getToken()) headers.set('Authorization',`Bearer ${getToken()}`);
   if(options.body && !(options.body instanceof FormData) && typeof options.body !== 'string') {headers.set('Content-Type','application/json'); options={...options,body:JSON.stringify(options.body)};}
