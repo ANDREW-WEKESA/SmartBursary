@@ -16,11 +16,14 @@ def generate_otp() -> str:
 
 def send_email(to_email: str, subject: str, html_body: str, text_body: str = None):
     """Send an email using configured SMTP settings."""
+    logger.info(f"Email config: enabled={settings.email_enabled}, host={settings.smtp_host}, port={settings.smtp_port}, user={settings.smtp_username}")
+    
     if not settings.email_enabled:
         logger.info(f"Email disabled. Would have sent to {to_email}: {subject}")
         return False
     
     try:
+        logger.info(f"Attempting to send email to {to_email}")
         msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
         msg['From'] = f"{settings.smtp_from_name} <{settings.smtp_from_email}>"
@@ -54,7 +57,8 @@ def send_email(to_email: str, subject: str, html_body: str, text_body: str = Non
         return True
         
     except Exception as e:
-        logger.error(f"Failed to send email to {to_email}: {str(e)}")
+        logger.error(f"Failed to send email to {to_email}: {type(e).__name__}: {str(e)}")
+        logger.exception(e)  # This will log the full traceback
         return False
 
 
