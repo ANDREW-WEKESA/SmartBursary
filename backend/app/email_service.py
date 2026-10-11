@@ -224,22 +224,32 @@ SmartBursary System
         send_email(email, subject, html_body, text_body)
 
 
-def send_otp_email(email: str, full_name: str, otp_code: str):
-    """Send OTP verification email for registration."""
-    subject = "Verify Your Email - SmartBursary"
+def send_otp_email(email: str, full_name: str, otp_code: str, purpose: str = "registration"):
+    """Send OTP verification email for registration or password reset."""
+    
+    if purpose == "password_reset":
+        subject = "Password Reset Code - SmartBursary"
+        title = "Password Reset Request"
+        message = "We received a request to reset your password. Use the code below to reset your password:"
+        expiry_note = "If you didn't request a password reset, please ignore this email and your password will remain unchanged."
+    else:
+        subject = "Verify Your Email - SmartBursary"
+        title = "Email Verification"
+        message = "Thank you for registering with SmartBursary. To complete your registration, please verify your email address using the code below:"
+        expiry_note = "If you didn't request this code, please ignore this email."
     
     html_body = f"""
     <html>
     <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
         <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h2 style="color: #2563eb;">Email Verification</h2>
+            <h2 style="color: #2563eb;">{title}</h2>
             <p>Dear {full_name},</p>
-            <p>Thank you for registering with SmartBursary. To complete your registration, please verify your email address using the code below:</p>
+            <p>{message}</p>
             <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center;">
                 <h1 style="color: #2563eb; font-size: 36px; letter-spacing: 8px; margin: 0;">{otp_code}</h1>
             </div>
             <p>This code will expire in <strong>10 minutes</strong>.</p>
-            <p>If you didn't request this code, please ignore this email.</p>
+            <p>{expiry_note}</p>
             <p style="margin-top: 30px;">Best regards,<br>SmartBursary Team</p>
         </div>
     </body>
@@ -247,17 +257,17 @@ def send_otp_email(email: str, full_name: str, otp_code: str):
     """
     
     text_body = f"""
-Email Verification
+{title}
 
 Dear {full_name},
 
-Thank you for registering with SmartBursary. To complete your registration, please verify your email address using the code below:
+{message}
 
 {otp_code}
 
 This code will expire in 10 minutes.
 
-If you didn't request this code, please ignore this email.
+{expiry_note}
 
 Best regards,
 SmartBursary Team

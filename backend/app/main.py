@@ -11,7 +11,7 @@ from pydantic import EmailStr
 from .config import settings
 from .database import Base, engine, get_db, SessionLocal
 from .models import User, Bursary, Application, Document, AuditLog, Notification, ProfileDocument, EmailOTP
-from .schemas import RegisterIn, VerifyOTPIn, LoginIn, TokenOut, UserOut, StaffUserIn, BursaryIn, BursaryOut, ApplicationIn, ApplicationOut, StatusIn, DocumentOut, ProfileUpdateIn, ProfileOut, ProfileDocumentOut
+from .schemas import RegisterIn, VerifyOTPIn, LoginIn, TokenOut, UserOut, StaffUserIn, BursaryIn, BursaryOut, ApplicationIn, ApplicationOut, StatusIn, DocumentOut, ProfileUpdateIn, ProfileOut, ProfileDocumentOut, ForgotPasswordIn, ResetPasswordIn
 from .security import hash_password, verify_password, create_token, current_user, require_roles
 from .email_service import (
     generate_otp,
@@ -209,6 +209,81 @@ def login(data: LoginIn, db: Session = Depends(get_db)):
     if not user or not verify_password(data.password,user.password_hash): raise HTTPException(401,"Email or password is incorrect")
     if not user.active: raise HTTPException(403,"This account is disabled")
     return {"access_token":create_token(user),"user":user}
+
+@app.post("/api/auth/forgot-password", status_code=200)
+def forgot_password(data: ForgotPasswordIn, db: Session = Depends(get_db)):
+    """Request password reset - sends OTP to user's email."""
+    email = str(data.email).lower()
+    
+    # Find user
+    user = db.scalar(select(User).where(User.email == email))
+    if not user:
+        # Don't reveal if email exists - security best practice
+        return {"message": "If an account with that email exists, a password reset code has been sent."}
+    
+    # Generate and store OTP
+    otp_code = generate_otp()
+    expires_at = datetime.utcnow() + timedelta(minutes=10)
+    
+    # Remove any existing password reset OTPs for this email
+    for old_otp in db.scalars(select(EmailOTP).where(
+        EmailOTP.email == email,
+        EmailOTP.purpose == "password_reset"
+    )).all():
+        db.delete(old_otp)
+    
+    otp = EmailOTP(
+        email=email,
+        otp_code=otp_code,
+        purpose="password_reset",
+        expires_at=expires_at
+    )
+    db.add(otp)
+    db.commit()
+    
+    # Send OTP email
+    send_otp_email(email, user.full_name, otp_code, purpose="password_reset")
+    
+    audit(db, None, "Password reset requested", "User", user.id, email)
+    
+    return {"message": "If an account with that email exists, a password reset code has been sent."}
+
+@app.post("/api/auth/reset-password", status_code=200)
+def reset_password(data: ResetPasswordIn, db: Session = Depends(get_db)):
+    """Reset password using OTP verification."""
+    email = str(data.email).lower()
+    
+    # Find user
+    user = db.scalar(select(User).where(User.email == email))
+    if not user:
+        raise HTTPException(404, "User not found")
+    
+    # Find valid OTP
+    otp = db.scalar(
+        select(EmailOTP)
+        .where(
+            EmailOTP.email == email,
+            EmailOTP.otp_code == data.otp_code,
+            EmailOTP.purpose == "password_reset",
+            EmailOTP.verified == False,
+            EmailOTP.expires_at > datetime.utcnow()
+        )
+        .order_by(EmailOTP.created_at.desc())
+    )
+    
+    if not otp:
+        raise HTTPException(400, "Invalid or expired reset code")
+    
+    # Mark OTP as verified
+    otp.verified = True
+    
+    # Update password
+    user.password_hash = hash_password(data.new_password)
+    
+    audit(db, user, "Password reset successfully", "User", user.id)
+    db.commit()
+    
+    return {"message": "Password reset successfully. You can now login with your new password."}
 
 @app.get("/api/auth/me", response_model=UserOut)
 def me(user: User = Depends(current_user)): return user

@@ -112,3 +112,11 @@ class StaffUserIn(BaseModel):
     password: str = Field(min_length=12, max_length=128)
     role: str = Field(pattern="^(admin|reviewer)$")
     constituency: str = ""
+
+class ForgotPasswordIn(BaseModel):
+    email: EmailStr
+
+class ResetPasswordIn(BaseModel):
+    email: EmailStr
+    otp_code: str = Field(min_length=6, max_length=6)
+    new_password: str = Field(min_length=8, max_length=128)
