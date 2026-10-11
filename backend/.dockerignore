@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.venv/
+.venv_blocked/
+.venv_new/
+venv/
+env/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Documentation
+*.md
+!README.md
+
+# Scripts
+seed_*.py
+test_*.py
+migrate_*.py
+add_*.py
+seed_prod.html
+seed_production.py
+
+# Railway/Render configs
+railway.json
+Procfile
+runtime.txt
