@@ -264,3 +264,86 @@ SmartBursary Team
     """
     
     send_email(email, subject, html_body, text_body)
+
+
+def send_staff_account_otp(email: str, full_name: str, otp_code: str, role: str):
+    """Send OTP email for newly created staff account."""
+    subject = f"Verify Your SmartBursary {role.title()} Account"
+    
+    html_body = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+            .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }}
+            .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }}
+            .otp-box {{ background: white; border: 2px solid #667eea; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0; }}
+            .otp-code {{ font-size: 32px; font-weight: bold; color: #667eea; letter-spacing: 8px; }}
+            .warning {{ background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }}
+            .footer {{ text-align: center; margin-top: 20px; font-size: 12px; color: #666; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>SmartBursary Account Created</h1>
+            </div>
+            <div class="content">
+                <h2>Hello {full_name},</h2>
+                <p>A <strong>{role.title()}</strong> account has been created for you on SmartBursary.</p>
+                
+                <p>To activate your account and set your password, please verify your email address using the code below:</p>
+                
+                <div class="otp-box">
+                    <p style="margin: 0 0 10px 0; font-size: 14px; color: #666;">Your Verification Code</p>
+                    <div class="otp-code">{otp_code}</div>
+                    <p style="margin: 10px 0 0 0; font-size: 12px; color: #999;">This code expires in 10 minutes</p>
+                </div>
+                
+                <div class="warning">
+                    <strong>⚠️ Security Notice:</strong> This code was requested by a system administrator. If you did not expect this email, please contact your administrator immediately.
+                </div>
+                
+                <p><strong>Next Steps:</strong></p>
+                <ol>
+                    <li>Click the activation link in your welcome email</li>
+                    <li>Enter this 6-digit code</li>
+                    <li>Set your secure password</li>
+                    <li>Start using SmartBursary</li>
+                </ol>
+                
+                <div class="footer">
+                    <p>SmartBursary - Education Financial Assistance</p>
+                    <p>This is an automated message, please do not reply.</p>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    text_body = f"""
+    SmartBursary Account Created
+    
+    Hello {full_name},
+    
+    A {role.title()} account has been created for you on SmartBursary.
+    
+    Your Verification Code: {otp_code}
+    (This code expires in 10 minutes)
+    
+    Security Notice: This code was requested by a system administrator. 
+    If you did not expect this email, please contact your administrator immediately.
+    
+    Next Steps:
+    1. Click the activation link in your welcome email
+    2. Enter this 6-digit code
+    3. Set your secure password
+    4. Start using SmartBursary
+    
+    SmartBursary - Education Financial Assistance
+    """
+    
+    return send_email(email, subject, html_body, text_body)

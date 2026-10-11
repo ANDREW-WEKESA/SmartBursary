@@ -4,7 +4,7 @@ import os
 class Settings(BaseSettings):
     app_name: str = "SmartBursary API"
     secret_key: str = "CHANGE_THIS_SECRET_KEY_BEFORE_DEPLOYMENT"
-    access_token_minutes: int = 60
+    access_token_minutes: int = 300  # 5 hours session timeout
     
     # Database - Railway provides DATABASE_URL automatically for PostgreSQL
     database_url: str = os.getenv("DATABASE_URL", "sqlite:///./smartbursary.db")
