@@ -918,3 +918,84 @@ def seed_database(current: User = Depends(current_user), db: Session = Depends(g
         raise HTTPException(500, f"Seeding failed: {str(e)}")
     finally:
         db.close()
+
+@app.post("/api/admin/cleanup-database")
+def cleanup_database(current: User = Depends(current_user), db: Session = Depends(get_db)):
+    """
+    Clean up database - keep only 5 essential accounts
+    Only accessible by super admin.
+    """
+    if current.role != "admin":
+        raise HTTPException(403, "Only super admin can cleanup the database")
+    
+    try:
+        # Keep these 5 accounts
+        keep_emails = [
+            'admin@smartbursary.com',           # Super admin
+            'admin.westlands@smartbursary.com', # Constituency admin
+            'reviewer.westlands@smartbursary.com', # Reviewer
+            'john.wanjiku0@student.ke',         # Applicant 1
+            'mary.kamau1@student.ke'            # Applicant 2
+        ]
+        
+        # Get all users
+        all_users = db.scalars(select(User)).all()
+        initial_count = len(all_users)
+        
+        # Delete users not in keep list
+        deleted_users = 0
+        for user in all_users:
+            if user.email not in keep_emails:
+                # Delete applications and documents for this user
+                applications = db.scalars(select(Application).where(Application.applicant_id == user.id)).all()
+                for app in applications:
+                    documents = db.scalars(select(Document).where(Document.application_id == app.id)).all()
+                    for doc in documents:
+                        db.delete(doc)
+                    db.delete(app)
+                
+                # Delete the user
+                db.delete(user)
+                deleted_users += 1
+        
+        # Keep only 3 bursaries
+        all_bursaries = db.scalars(select(Bursary)).all()
+        kept_bursaries = 0
+        for bursary in all_bursaries:
+            if kept_bursaries < 3:
+                kept_bursaries += 1
+            else:
+                # Delete applications for this bursary
+                applications = db.scalars(select(Application).where(Application.bursary_id == bursary.id)).all()
+                for app in applications:
+                    documents = db.scalars(select(Document).where(Document.application_id == app.id)).all()
+                    for doc in documents:
+                        db.delete(doc)
+                    db.delete(app)
+                db.delete(bursary)
+        
+        db.commit()
+        
+        # Final counts
+        final_users = db.scalar(select(func.count(User.id)))
+        final_bursaries = db.scalar(select(func.count(Bursary.id)))
+        final_applications = db.scalar(select(func.count(Application.id)))
+        
+        return {
+            "message": "Database cleaned up successfully!",
+            "status": "success",
+            "summary": {
+                "initial_users": initial_count,
+                "deleted_users": deleted_users,
+                "remaining_users": final_users,
+                "remaining_bursaries": final_bursaries,
+                "remaining_applications": final_applications
+            },
+            "kept_accounts": keep_emails
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(500, f"Cleanup failed: {str(e)}")
+    finally:
+        db.close()
