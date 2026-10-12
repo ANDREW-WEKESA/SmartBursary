@@ -270,11 +270,11 @@ def login(data: LoginIn, db: Session = Depends(get_db)):
         user.last_login = datetime.utcnow()
         user.login_count = getattr(user, 'login_count', 0) + 1
         db.commit()
-        return {"access_token":create_token(user),"user":user,"last_login":previous_login.isoformat() if previous_login else None,"login_count":user.login_count-1}
+        return {"access_token":create_token(user),"token_type":"bearer","user":user,"last_login":previous_login.isoformat() if previous_login else None,"login_count":user.login_count-1}
     except Exception as e:
         # Fallback if columns don't exist yet
         db.rollback()
-        return {"access_token":create_token(user),"user":user}
+        return {"access_token":create_token(user),"token_type":"bearer","user":user}
 
 @app.post("/api/auth/forgot-password", status_code=200)
 def forgot_password(data: ForgotPasswordIn, db: Session = Depends(get_db)):
