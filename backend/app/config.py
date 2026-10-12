@@ -10,10 +10,9 @@ class Settings(BaseSettings):
     database_url: str = os.getenv("DATABASE_URL", "sqlite:///./smartbursary.db")
     
     # CORS - supports both local and production domains
-    # Add your Vercel domain here: https://your-app.vercel.app
     cors_origins: str = os.getenv(
         "CORS_ORIGINS",
-        "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174"
+        "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,https://smart-bursary-xijg-git-main-andrew-wekesas-projects.vercel.app"
     )
     
     upload_dir: str = "uploads"
