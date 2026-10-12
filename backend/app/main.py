@@ -1092,7 +1092,7 @@ def cleanup_database(current: User = Depends(current_user), db: Session = Depend
     finally:
         db.close()
 
-@app.post("/api/setup/create-admin")
+@app.get("/api/setup/create-admin")
 def create_admin_account(db: Session = Depends(get_db)):
     """
     One-time endpoint to create/update admin@smartbursary.com account.
