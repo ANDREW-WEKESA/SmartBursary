@@ -42,16 +42,23 @@ def send_email_via_sendgrid_api(to_email: str, subject: str, html_body: str, tex
             ]
         }
         
+        print(f"[SENDGRID DEBUG] Sending POST request to SendGrid...")
         response = requests.post(url, headers=headers, json=payload, timeout=10)
         
+        print(f"[SENDGRID DEBUG] Response status: {response.status_code}")
+        print(f"[SENDGRID DEBUG] Response body: {response.text[:500]}")
+        
         if response.status_code == 202:
+            print(f"[SENDGRID DEBUG] SUCCESS! Email accepted by SendGrid")
             logger.info(f"Email sent successfully to {to_email} via SendGrid API")
             return True
         else:
+            print(f"[SENDGRID DEBUG] ERROR! Status {response.status_code}")
             logger.error(f"SendGrid API error: {response.status_code} - {response.text}")
             return False
             
     except Exception as e:
+        print(f"[SENDGRID DEBUG] EXCEPTION: {type(e).__name__}: {str(e)}")
         logger.error(f"Failed to send email via SendGrid API: {type(e).__name__}: {str(e)}")
         logger.exception(e)
         return False
