@@ -18,6 +18,7 @@ def generate_otp() -> str:
 def send_email_via_sendgrid_api(to_email: str, subject: str, html_body: str, text_body: str = None):
     """Send email using SendGrid HTTP API (works on Render free tier)."""
     try:
+        print(f"[SENDGRID DEBUG] Starting SendGrid API call to {to_email}")
         logger.info(f"Sending email to {to_email} via SendGrid HTTP API")
         
         url = "https://api.sendgrid.com/v3/mail/send"
@@ -58,16 +59,24 @@ def send_email_via_sendgrid_api(to_email: str, subject: str, html_body: str, tex
 
 def send_email(to_email: str, subject: str, html_body: str, text_body: str = None):
     """Send an email using SendGrid HTTP API or SMTP."""
+    print(f"[EMAIL DEBUG] send_email called for {to_email}")
+    print(f"[EMAIL DEBUG] EMAIL_ENABLED={settings.email_enabled}")
+    print(f"[EMAIL DEBUG] SMTP_HOST={settings.smtp_host}")
+    print(f"[EMAIL DEBUG] SMTP_USERNAME={settings.smtp_username}")
+    
     logger.info(f"Email config: enabled={settings.email_enabled}, host={settings.smtp_host}, port={settings.smtp_port}, user={settings.smtp_username}")
     
     if not settings.email_enabled:
+        print(f"[EMAIL DEBUG] Email is DISABLED!")
         logger.info(f"Email disabled. Would have sent to {to_email}: {subject}")
         return False
     
     # If using SendGrid, use HTTP API instead of SMTP (Render blocks SMTP ports)
     if settings.smtp_host == "smtp.sendgrid.net" and settings.smtp_username == "apikey":
+        print(f"[EMAIL DEBUG] Using SendGrid HTTP API")
         return send_email_via_sendgrid_api(to_email, subject, html_body, text_body)
     
+    print(f"[EMAIL DEBUG] Using SMTP fallback")
     try:
         logger.info(f"Attempting to send email to {to_email} via {settings.smtp_host}")
         msg = MIMEMultipart('alternative')
