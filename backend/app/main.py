@@ -277,10 +277,12 @@ def reset_password(data: ResetPasswordIn, db: Session = Depends(get_db)):
     # Mark OTP as verified
     otp.verified = True
     
-    # Update password
+    # Update password AND activate account
     user.password_hash = hash_password(data.new_password)
+    user.email_verified = True
+    user.active = True
     
-    audit(db, user, "Password reset successfully", "User", user.id)
+    audit(db, user, "Password reset successfully and account activated", "User", user.id)
     db.commit()
     
     return {"message": "Password reset successfully. You can now login with your new password."}
