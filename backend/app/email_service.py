@@ -4,6 +4,7 @@ from email.mime.multipart import MIMEMultipart
 from typing import List
 import logging
 import random
+import requests
 from .config import settings
 
 logger = logging.getLogger(__name__)
@@ -14,13 +15,58 @@ def generate_otp() -> str:
     return ''.join([str(random.randint(0, 9)) for _ in range(6)])
 
 
+def send_email_via_sendgrid_api(to_email: str, subject: str, html_body: str, text_body: str = None):
+    """Send email using SendGrid HTTP API (works on Render free tier)."""
+    try:
+        logger.info(f"Sending email to {to_email} via SendGrid HTTP API")
+        
+        url = "https://api.sendgrid.com/v3/mail/send"
+        headers = {
+            "Authorization": f"Bearer {settings.smtp_password}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "personalizations": [{
+                "to": [{"email": to_email}],
+                "subject": subject
+            }],
+            "from": {
+                "email": settings.smtp_from_email,
+                "name": settings.smtp_from_name
+            },
+            "content": [
+                {"type": "text/plain", "value": text_body or ""},
+                {"type": "text/html", "value": html_body}
+            ]
+        }
+        
+        response = requests.post(url, headers=headers, json=payload, timeout=10)
+        
+        if response.status_code == 202:
+            logger.info(f"Email sent successfully to {to_email} via SendGrid API")
+            return True
+        else:
+            logger.error(f"SendGrid API error: {response.status_code} - {response.text}")
+            return False
+            
+    except Exception as e:
+        logger.error(f"Failed to send email via SendGrid API: {type(e).__name__}: {str(e)}")
+        logger.exception(e)
+        return False
+
+
 def send_email(to_email: str, subject: str, html_body: str, text_body: str = None):
-    """Send an email using configured SMTP settings."""
+    """Send an email using SendGrid HTTP API or SMTP."""
     logger.info(f"Email config: enabled={settings.email_enabled}, host={settings.smtp_host}, port={settings.smtp_port}, user={settings.smtp_username}")
     
     if not settings.email_enabled:
         logger.info(f"Email disabled. Would have sent to {to_email}: {subject}")
         return False
+    
+    # If using SendGrid, use HTTP API instead of SMTP (Render blocks SMTP ports)
+    if settings.smtp_host == "smtp.sendgrid.net" and settings.smtp_username == "apikey":
+        return send_email_via_sendgrid_api(to_email, subject, html_body, text_body)
     
     try:
         logger.info(f"Attempting to send email to {to_email} via {settings.smtp_host}")
