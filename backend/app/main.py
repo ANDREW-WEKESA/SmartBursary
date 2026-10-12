@@ -23,6 +23,14 @@ from .email_service import (
 )
 from .sms_service import sms_service
 from .award_letter import generate_award_letter
+from .kenya_counties_constituencies import (
+    get_all_constituencies, 
+    search_constituencies, 
+    get_constituencies_by_county,
+    get_all_counties,
+    TOTAL_COUNTIES,
+    TOTAL_CONSTITUENCIES
+)
 
 STATUSES = {"Submitted", "Under Review", "Verification", "Additional Information Required", "Committee Review", "Approved", "Rejected", "Disbursed"}
 ALLOWED_EXT = {".pdf", ".jpg", ".jpeg", ".png"}
@@ -78,7 +86,49 @@ def priority(income: int, household: int, duplicate: bool):
 @app.get("/api/health")
 def health(): return {"status":"ok","service":"SmartBursary API"}
 
-@app.post("/api/auth/register", status_code=201)
+@app.get("/api/counties")
+def get_counties():
+    """Get all 47 counties in Kenya"""
+    return {
+        "counties": get_all_counties(),
+        "total": TOTAL_COUNTIES
+    }
+
+@app.get("/api/constituencies")
+def get_constituencies(
+    county: str = Query(None, description="Filter by county name"),
+    search: str = Query(None, description="Search constituencies by name"),
+    limit: int = Query(50, ge=1, le=290)
+):
+    """
+    Get constituencies with optional filtering
+    - No params: Returns all 290 constituencies
+    - county: Returns constituencies for specific county
+    - search: Search by constituency or county name (autocomplete)
+    """
+    if search:
+        results = search_constituencies(search, limit=limit)
+        return {
+            "constituencies": results,
+            "total": len(results),
+            "query": search
+        }
+    elif county:
+        constituencies = get_constituencies_by_county(county)
+        return {
+            "county": county,
+            "constituencies": [{"constituency": c, "county": county} for c in constituencies],
+            "total": len(constituencies)
+        }
+    else:
+        all_const = get_all_constituencies()
+        return {
+            "constituencies": all_const[:limit],
+            "total": TOTAL_CONSTITUENCIES,
+            "showing": min(limit, len(all_const))
+        }
+
+@app.get("/api/auth/register", status_code=201)
 def register(data: RegisterIn, db: Session = Depends(get_db)):
     """Register a new user and send OTP for email verification."""
     email = str(data.email).lower()
