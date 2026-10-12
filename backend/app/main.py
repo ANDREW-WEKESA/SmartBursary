@@ -29,7 +29,8 @@ from .kenya_counties_constituencies import (
     get_constituencies_by_county,
     get_all_counties,
     TOTAL_COUNTIES,
-    TOTAL_CONSTITUENCIES
+    TOTAL_CONSTITUENCIES,
+    KENYA_COUNTIES_CONSTITUENCIES
 )
 
 STATUSES = {"Submitted", "Under Review", "Verification", "Additional Information Required", "Committee Review", "Approved", "Rejected", "Disbursed"}
