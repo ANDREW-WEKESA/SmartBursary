@@ -1220,6 +1220,41 @@ def cleanup_database(current: User = Depends(current_user), db: Session = Depend
 
 
 
+
+@app.get("/api/setup/add-login-columns")
+def add_login_tracking_columns():
+    """
+    Add last_login and login_count columns to users table without deleting data.
+    Safe to run - won't break if columns already exist.
+    """
+    try:
+        from sqlalchemy import text
+        from .database import engine
+        
+        with engine.connect() as conn:
+            # Try to add columns - will fail silently if they exist
+            try:
+                conn.execute(text("ALTER TABLE users ADD COLUMN last_login TIMESTAMP"))
+                conn.commit()
+                print("✓ Added last_login column")
+            except Exception as e:
+                print(f"last_login column might already exist: {e}")
+            
+            try:
+                conn.execute(text("ALTER TABLE users ADD COLUMN login_count INTEGER DEFAULT 0"))
+                conn.commit()
+                print("✓ Added login_count column")
+            except Exception as e:
+                print(f"login_count column might already exist: {e}")
+        
+        return {
+            "status": "success",
+            "message": "✅ Login tracking columns added to users table!",
+            "action": "You can now login successfully. Try logging in!"
+        }
+    except Exception as e:
+        raise HTTPException(500, f"Failed to add columns: {str(e)}")
+
 @app.get("/api/setup/recreate-tables")
 def recreate_database_tables(db: Session = Depends(get_db)):
     """
