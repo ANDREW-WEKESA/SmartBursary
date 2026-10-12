@@ -21,6 +21,7 @@ from .email_service import (
     send_new_application_notification_to_reviewers,
     send_staff_account_otp
 )
+from .sms_service import sms_service
 
 STATUSES = {"Submitted", "Under Review", "Verification", "Additional Information Required", "Committee Review", "Approved", "Rejected", "Disbursed"}
 ALLOWED_EXT = {".pdf", ".jpg", ".jpeg", ".png"}
@@ -118,11 +119,14 @@ def register(data: RegisterIn, db: Session = Depends(get_db)):
     audit(db, None, "User registered (pending verification)", "User", user.id, email)
     db.commit()
     
-    # Send OTP email
+    # Send OTP via email
     send_otp_email(email, user.full_name, otp_code)
     
+    # Send OTP via SMS
+    sms_service.send_registration_sms(user.phone, user.full_name, otp_code)
+    
     return {
-        "message": "Registration successful. Please check your email for the verification code.",
+        "message": "Registration successful. Please check your email and phone for the verification code.",
         "email": email,
         "requires_verification": True
     }
@@ -609,6 +613,9 @@ def submit_application(data:ApplicationIn,db:Session=Depends(get_db),user:User=D
     # Send email notifications
     send_application_submitted_email(user.email, user.full_name, b.name, number)
     
+    # Send SMS notification
+    sms_service.send_application_submitted_sms(user.phone, user.full_name, number, b.name)
+    
     # Notify reviewers in the same constituency
     if b.constituency:
         reviewers = db.scalars(select(User).where(
@@ -665,6 +672,14 @@ def update_status(application_number:str,data:StatusIn,db:Session=Depends(get_db
         a.application_number,
         a.status,
         a.bursary.amount_kes if a.status.lower() in ["approved", "disbursed"] else None
+    )
+    
+    # Send SMS notification to applicant
+    sms_service.send_status_change_sms(
+        a.applicant.phone,
+        a.applicant.full_name,
+        a.application_number,
+        a.status
     )
     
     a=db.scalars(app_query(db).where(Application.id==a.id)).unique().first();return application_out(a)
