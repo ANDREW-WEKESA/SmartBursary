@@ -1,5 +1,5 @@
 import React,{useCallback,useEffect,useMemo,useState} from 'react';
-import {Activity,ArrowDownToLine,ArrowRight,CheckCircle2,ChevronDown,ClipboardCheck,Clock3,FileText,Filter,GraduationCap,HeartHandshake,Home,LogOut,MapPin,Menu,Search,ShieldCheck,UploadCloud,Users,Wallet,AlertTriangle,BookOpen,Plus,X,Bell,RefreshCw,Sun,Moon,Edit2} from 'lucide-react';
+import {Activity,ArrowDownToLine,ArrowRight,CheckCircle2,ChevronDown,ClipboardCheck,Clock3,FileText,Filter,GraduationCap,HeartHandshake,Home,LogOut,MapPin,Menu,Search,ShieldCheck,UploadCloud,Users,Wallet,AlertTriangle,BookOpen,Plus,X,Bell,RefreshCw,Sun,Moon,Edit2,HelpCircle,MessageCircle,Mail,Phone} from 'lucide-react';
 import {api,clearSession,getSavedUser,getToken,setSession} from './api';
 
 const money=n=>new Intl.NumberFormat('en-KE',{style:'currency',currency:'KES',maximumFractionDigits:0}).format(n||0);
