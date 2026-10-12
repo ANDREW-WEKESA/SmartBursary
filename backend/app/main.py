@@ -264,12 +264,17 @@ def login(data: LoginIn, db: Session = Depends(get_db)):
     user = db.scalar(select(User).where(User.email == str(data.email).lower()))
     if not user or not verify_password(data.password,user.password_hash): raise HTTPException(401,"Email or password is incorrect")
     if not user.active: raise HTTPException(403,"This account is disabled")
-    # Track last login
-    previous_login = user.last_login
-    user.last_login = datetime.utcnow()
-    user.login_count = (user.login_count or 0) + 1
-    db.commit()
-    return {"access_token":create_token(user),"user":user,"last_login":previous_login.isoformat() if previous_login else None,"login_count":user.login_count-1}
+    # Track last login (with safe fallback for old database)
+    try:
+        previous_login = getattr(user, 'last_login', None)
+        user.last_login = datetime.utcnow()
+        user.login_count = getattr(user, 'login_count', 0) + 1
+        db.commit()
+        return {"access_token":create_token(user),"user":user,"last_login":previous_login.isoformat() if previous_login else None,"login_count":user.login_count-1}
+    except Exception as e:
+        # Fallback if columns don't exist yet
+        db.rollback()
+        return {"access_token":create_token(user),"user":user}
 
 @app.post("/api/auth/forgot-password", status_code=200)
 def forgot_password(data: ForgotPasswordIn, db: Session = Depends(get_db)):
