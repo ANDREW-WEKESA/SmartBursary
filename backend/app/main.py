@@ -1091,3 +1091,64 @@ def cleanup_database(current: User = Depends(current_user), db: Session = Depend
         raise HTTPException(500, f"Cleanup failed: {str(e)}")
     finally:
         db.close()
+
+@app.post("/api/setup/create-admin")
+def create_admin_account(db: Session = Depends(get_db)):
+    """
+    One-time endpoint to create/update admin@smartbursary.com account.
+    This endpoint has NO authentication to allow initial setup.
+    After using it once, consider removing or securing this endpoint.
+    """
+    admin_email = "admin@smartbursary.com"
+    admin_password = "ChangeMe!"
+    
+    try:
+        # Check if admin already exists
+        existing_admin = db.scalar(select(User).where(User.email == admin_email))
+        
+        if existing_admin:
+            # Update existing admin account
+            existing_admin.password_hash = hash_password(admin_password)
+            existing_admin.active = True
+            existing_admin.email_verified = True
+            existing_admin.role = "admin"
+            db.commit()
+            
+            return {
+                "status": "success",
+                "message": "Admin account updated successfully!",
+                "action": "updated",
+                "credentials": {
+                    "email": admin_email,
+                    "password": admin_password
+                },
+                "login_url": "https://smart-bursary-xijg-git-main-andrew-wekesas-projects.vercel.app/"
+            }
+        else:
+            # Create new admin account
+            admin_user = User(
+                full_name="SmartBursary Administrator",
+                email=admin_email,
+                password_hash=hash_password(admin_password),
+                role="admin",
+                phone="",
+                email_verified=True,
+                active=True
+            )
+            db.add(admin_user)
+            db.commit()
+            
+            return {
+                "status": "success",
+                "message": "Admin account created successfully!",
+                "action": "created",
+                "credentials": {
+                    "email": admin_email,
+                    "password": admin_password
+                },
+                "login_url": "https://smart-bursary-xijg-git-main-andrew-wekesas-projects.vercel.app/"
+            }
+    
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(500, f"Failed to create admin account: {str(e)}")
