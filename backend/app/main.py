@@ -22,6 +22,7 @@ from .email_service import (
     send_staff_account_otp
 )
 from .sms_service import sms_service
+from .award_letter import generate_award_letter
 
 STATUSES = {"Submitted", "Under Review", "Verification", "Additional Information Required", "Committee Review", "Approved", "Rejected", "Disbursed"}
 ALLOWED_EXT = {".pdf", ".jpg", ".jpeg", ".png"}
@@ -683,6 +684,55 @@ def update_status(application_number:str,data:StatusIn,db:Session=Depends(get_db
     )
     
     a=db.scalars(app_query(db).where(Application.id==a.id)).unique().first();return application_out(a)
+
+@app.get("/api/applications/{application_number}/award-letter")
+def download_award_letter(application_number: str, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    """
+    Generate and download bursary award letter/voucher PDF
+    Only available for Approved or Disbursed applications
+    """
+    a = db.scalar(select(Application).options(
+        joinedload(Application.applicant),
+        joinedload(Application.bursary)
+    ).where(Application.application_number == application_number))
+    
+    if not a:
+        raise HTTPException(404, "Application not found")
+    
+    # Check permissions
+    if user.role == "applicant" and a.applicant_id != user.id:
+        raise HTTPException(403, "You can only download your own award letter")
+    
+    # Only allow for approved or disbursed applications
+    if a.status not in ["Approved", "Disbursed"]:
+        raise HTTPException(400, f"Award letter is only available for Approved or Disbursed applications. Current status: {a.status}")
+    
+    # Generate PDF
+    pdf_buffer = generate_award_letter(
+        application_number=a.application_number,
+        applicant_name=a.applicant.full_name,
+        national_id=a.national_id,
+        institution=a.institution,
+        course=a.course,
+        year_of_study=a.year_of_study,
+        bursary_name=a.bursary.name,
+        amount=a.bursary.amount_kes,
+        constituency=a.bursary.constituency,
+        approved_date=a.updated_at.strftime('%d %B %Y') if a.updated_at else None
+    )
+    
+    # Return PDF as download
+    from fastapi.responses import StreamingResponse
+    
+    filename = f"Bursary_Award_Letter_{a.application_number}.pdf"
+    
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"'
+        }
+    )
 
 @app.post("/api/applications/{application_number}/documents", response_model=DocumentOut, status_code=201)
 async def upload_document(application_number:str,document_type:str=Form(...),file:UploadFile=File(...),db:Session=Depends(get_db),user:User=Depends(current_user)):
