@@ -23,7 +23,7 @@ def send_email(to_email: str, subject: str, html_body: str, text_body: str = Non
         return False
     
     try:
-        logger.info(f"Attempting to send email to {to_email}")
+        logger.info(f"Attempting to send email to {to_email} via {settings.smtp_host}")
         msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
         msg['From'] = f"{settings.smtp_from_name} <{settings.smtp_from_email}>"
@@ -37,21 +37,40 @@ def send_email(to_email: str, subject: str, html_body: str, text_body: str = Non
         part2 = MIMEText(html_body, 'html')
         msg.attach(part2)
         
-        # Connect to SMTP server
-        if settings.smtp_port == 465:
-            # SSL
-            with smtplib.SMTP_SSL(settings.smtp_host, settings.smtp_port) as server:
-                if settings.smtp_username:
-                    server.login(settings.smtp_username, settings.smtp_password)
-                server.send_message(msg)
-        else:
-            # TLS or plain
-            with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
-                if settings.smtp_port == 587:
-                    server.starttls()
-                if settings.smtp_username:
-                    server.login(settings.smtp_username, settings.smtp_password)
-                server.send_message(msg)
+        # Connect to SMTP server with shorter timeout
+        try:
+            if settings.smtp_port == 465:
+                # SSL
+                logger.info(f"Connecting via SSL to {settings.smtp_host}:{settings.smtp_port}")
+                with smtplib.SMTP_SSL(settings.smtp_host, settings.smtp_port, timeout=10) as server:
+                    logger.info("SSL connection established, logging in...")
+                    if settings.smtp_username:
+                        server.login(settings.smtp_username, settings.smtp_password)
+                    logger.info("Login successful, sending message...")
+                    server.send_message(msg)
+            else:
+                # TLS or plain
+                logger.info(f"Connecting via TLS to {settings.smtp_host}:{settings.smtp_port}")
+                with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=10) as server:
+                    if settings.smtp_port == 587:
+                        logger.info("Starting TLS...")
+                        server.starttls()
+                    if settings.smtp_username:
+                        logger.info("Logging in...")
+                        server.login(settings.smtp_username, settings.smtp_password)
+                    logger.info("Sending message...")
+                    server.send_message(msg)
+        except OSError as e:
+            if e.errno == 101:  # Network unreachable
+                logger.error(f"Network unreachable. Render free tier blocks external SMTP. Use SendGrid instead.")
+            raise
+        except smtplib.SMTPAuthenticationError as e:
+            logger.error(f"SMTP Authentication failed: {str(e)}")
+            logger.error("Check your SMTP_USERNAME and SMTP_PASSWORD in Render environment variables")
+            raise
+        except Exception as e:
+            logger.error(f"SMTP connection error: {type(e).__name__}: {str(e)}")
+            raise
         
         logger.info(f"Email sent successfully to {to_email}")
         return True
