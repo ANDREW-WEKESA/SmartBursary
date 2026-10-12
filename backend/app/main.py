@@ -1207,6 +1207,72 @@ def cleanup_database(current: User = Depends(current_user), db: Session = Depend
     finally:
         db.close()
 
+
+@app.get("/api/setup/seed-constituencies")
+def seed_all_constituencies(db: Session = Depends(get_db)):
+    """
+    One-time endpoint to seed all 290 Kenya constituencies as bursary programs.
+    No authentication required for initial setup.
+    Call this URL once: https://smartbursary-backend.onrender.com/api/setup/seed-constituencies
+    """
+    try:
+        created = 0
+        skipped = 0
+        
+        for county, constituencies in KENYA_COUNTIES_CONSTITUENCIES.items():
+            for constituency in constituencies:
+                # Check if already exists
+                existing = db.scalar(
+                    select(Bursary).where(
+                        Bursary.name == f"{constituency} CDF Bursary",
+                        Bursary.constituency == constituency
+                    )
+                )
+                
+                if existing:
+                    skipped += 1
+                    continue
+                
+                # Create bursary program
+                bursary = Bursary(
+                    name=f"{constituency} CDF Bursary",
+                    description=f"Constituency Development Fund bursary for eligible students from {constituency} constituency, {county} County.",
+                    eligibility=f"Must be a resident of {constituency} constituency and enrolled in a recognized educational institution (secondary, TVET, college or university).",
+                    constituency=constituency,
+                    amount_kes=20000,
+                    show_amount=True,
+                    deadline=date(2027, 3, 31),
+                    required_documents=json.dumps([
+                        "National ID or Birth Certificate",
+                        "Admission Letter or Student ID",
+                        "Fee Structure",
+                        "Parent/Guardian ID Copy"
+                    ]),
+                    active=True
+                )
+                
+                db.add(bursary)
+                created += 1
+        
+        db.commit()
+        
+        total = db.scalar(select(func.count(Bursary.id)))
+        
+        return {
+            "status": "success",
+            "message": "🇰🇪 Successfully seeded all Kenya constituencies!",
+            "created": created,
+            "skipped": skipped,
+            "total_in_database": total,
+            "counties": TOTAL_COUNTIES,
+            "total_constituencies": TOTAL_CONSTITUENCIES,
+            "coverage": f"All {TOTAL_COUNTIES} counties with {TOTAL_CONSTITUENCIES} constituencies"
+        }
+    
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(500, f"Failed to seed constituencies: {str(e)}")
+
 @app.get("/api/setup/create-admin")
 def create_admin_account(db: Session = Depends(get_db)):
     """
