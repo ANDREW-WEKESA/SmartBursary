@@ -1219,6 +1219,31 @@ def cleanup_database(current: User = Depends(current_user), db: Session = Depend
         db.close()
 
 
+
+@app.get("/api/setup/recreate-tables")
+def recreate_database_tables(db: Session = Depends(get_db)):
+    """
+    DANGER: Recreates all database tables. This will DELETE ALL DATA!
+    Only use in development or when you have backups.
+    Run this once to add new columns (last_login, login_count) to users table.
+    """
+    try:
+        from .database import Base, engine
+        
+        # Drop all tables
+        Base.metadata.drop_all(bind=engine)
+        
+        # Recreate all tables with new schema
+        Base.metadata.create_all(bind=engine)
+        
+        return {
+            "status": "success",
+            "message": "⚠️ Database tables recreated! All data was deleted.",
+            "action": "Please run /api/setup/seed-constituencies again to repopulate data"
+        }
+    except Exception as e:
+        raise HTTPException(500, f"Failed to recreate tables: {str(e)}")
+
 @app.get("/api/setup/seed-constituencies")
 def seed_all_constituencies(db: Session = Depends(get_db)):
     """
