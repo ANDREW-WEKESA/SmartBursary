@@ -54,9 +54,12 @@ class SMSService:
             data = {
                 "username": self.username,
                 "to": phone,
-                "message": message,
-                "from": self.sender_id
+                "message": message
             }
+            
+            # Only use custom sender ID in production (not sandbox)
+            if self.username != "sandbox" and self.sender_id:
+                data["from"] = self.sender_id
             
             print(f"[SMS] Sending SMS to {phone}")
             response = requests.post(url, headers=headers, data=data, timeout=10)
