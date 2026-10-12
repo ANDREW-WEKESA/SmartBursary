@@ -130,11 +130,11 @@ export function HelpPage() {
         },
         {
           q: "I'm not receiving emails",
-          a: "Check your spam/junk folder. Add andrewwekesa675@gmail.com to your contacts. If still not receiving, contact support."
+          a: "Check your spam/junk folder. Add support@smartbursary.com to your contacts. If still not receiving, contact support."
         },
         {
           q: "How do I contact technical support?",
-          a: "Email: andrewwekesa675@gmail.com | Phone: +254 715 951 213 | We respond within 24 hours."
+          a: "Email: support@smartbursary.com | Phone: +254 700 000 000 | We respond within 24 hours."
         }
       ]
     }
@@ -207,8 +207,8 @@ export function HelpPage() {
           <p style={{ fontSize: '0.9rem', color: 'var(--mute)', marginBottom: '12px' }}>
             We respond within 24 hours
           </p>
-          <a href="mailto:andrewwekesa675@gmail.com" style={{ color: 'var(--green)', fontWeight: '600' }}>
-            andrewwekesa675@gmail.com
+          <a href="mailto:support@smartbursary.com" style={{ color: 'var(--green)', fontWeight: '600' }}>
+            support@smartbursary.com
           </a>
         </div>
 
@@ -218,8 +218,8 @@ export function HelpPage() {
           <p style={{ fontSize: '0.9rem', color: 'var(--mute)', marginBottom: '12px' }}>
             Mon-Fri, 8am-5pm EAT
           </p>
-          <a href="tel:+254715951213" style={{ color: 'var(--green)', fontWeight: '600' }}>
-            +254 715 951 213
+          <a href="tel:+254700000000" style={{ color: 'var(--green)', fontWeight: '600' }}>
+            +254 700 000 000
           </a>
         </div>
 
@@ -284,7 +284,7 @@ export function HelpPage() {
           Our support team is here to assist you
         </p>
         <a
-          href="mailto:andrewwekesa675@gmail.com"
+          href="mailto:support@smartbursary.com"
           className="btn primary"
           style={{ display: 'inline-block', textDecoration: 'none' }}
         >
