@@ -456,7 +456,7 @@ async def update_profile(request: Request, db: Session = Depends(get_db), user: 
                     continue
     
     # Map of string fields
-    string_fields = ["national_id", "gender", "county", "sub_county", "address", "guardian_name", "guardian_phone", "guardian_relationship", "institution", "student_number", "course", "year_of_study"]
+    string_fields = ["national_id", "gender", "county", "sub_county", "ward", "constituency", "address", "guardian_name", "guardian_phone", "guardian_relationship", "institution", "student_number", "course", "year_of_study"]
     
     for key, value in data.items():
         if key in string_fields:
