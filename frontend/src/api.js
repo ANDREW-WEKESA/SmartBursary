@@ -1,6 +1,6 @@
-// API Base URL - uses environment variable or defaults to local development
+// API Base URL - uses environment variable or defaults to production backend
 // Ensure /api is always included
-const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+const apiUrl = import.meta.env.VITE_API_URL || 'https://smartbursary-backend.onrender.com';
 const BASE = apiUrl.endsWith('/api') ? apiUrl : `${apiUrl}/api`;
 
 // Wake up backend on app load (for cold-start servers like Render free tier)
