@@ -1595,6 +1595,7 @@ def add_ward_and_profile_columns(db: Session = Depends(get_db), user: User = Dep
         ("ward", "ALTER TABLE users ADD COLUMN IF NOT EXISTS ward VARCHAR(100) DEFAULT ''"),
         ("sub_county", "ALTER TABLE users ADD COLUMN IF NOT EXISTS sub_county VARCHAR(100) DEFAULT ''"),
         ("county", "ALTER TABLE users ADD COLUMN IF NOT EXISTS county VARCHAR(100) DEFAULT ''"),
+        ("constituency", "ALTER TABLE users ADD COLUMN IF NOT EXISTS constituency VARCHAR(100) DEFAULT ''"),
         ("address", "ALTER TABLE users ADD COLUMN IF NOT EXISTS address TEXT DEFAULT ''"),
         ("guardian_name", "ALTER TABLE users ADD COLUMN IF NOT EXISTS guardian_name VARCHAR(160) DEFAULT ''"),
         ("guardian_phone", "ALTER TABLE users ADD COLUMN IF NOT EXISTS guardian_phone VARCHAR(40) DEFAULT ''"),
@@ -1695,6 +1696,7 @@ def run_all_migrations(db: Session = Depends(get_db), user: User = Depends(requi
         ("ward", "ALTER TABLE users ADD COLUMN IF NOT EXISTS ward VARCHAR(100) DEFAULT ''"),
         ("sub_county", "ALTER TABLE users ADD COLUMN IF NOT EXISTS sub_county VARCHAR(100) DEFAULT ''"),
         ("county", "ALTER TABLE users ADD COLUMN IF NOT EXISTS county VARCHAR(100) DEFAULT ''"),
+        ("constituency", "ALTER TABLE users ADD COLUMN IF NOT EXISTS constituency VARCHAR(100) DEFAULT ''"),
         ("address", "ALTER TABLE users ADD COLUMN IF NOT EXISTS address TEXT DEFAULT ''"),
         # Guardian information
         ("guardian_name", "ALTER TABLE users ADD COLUMN IF NOT EXISTS guardian_name VARCHAR(160) DEFAULT ''"),
