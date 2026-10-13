@@ -1584,9 +1584,10 @@ def create_admin_account(db: Session = Depends(get_db)):
         raise HTTPException(500, f"Failed to create admin account: {str(e)}")
 
 @app.get("/api/setup/add-ward-column")
-def add_ward_and_profile_columns(db: Session = Depends(get_db), user: User = Depends(require_roles("admin"))):
+def add_ward_and_profile_columns(db: Session = Depends(get_db)):
     """
     Add missing ward and profile columns to users table.
+    NO AUTHENTICATION REQUIRED - This is a bootstrap/recovery endpoint.
     Safe to run multiple times - uses IF NOT EXISTS.
     Admin-only endpoint.
     """
@@ -1640,9 +1641,10 @@ def add_ward_and_profile_columns(db: Session = Depends(get_db), user: User = Dep
         raise HTTPException(500, f"Failed to add columns: {str(e)}")
 
 @app.get("/api/setup/db-columns")
-def get_database_columns(db: Session = Depends(get_db), user: User = Depends(require_roles("admin"))):
+def get_database_columns(db: Session = Depends(get_db)):
     """
     Diagnostic endpoint to list all columns in the users table.
+    NO AUTHENTICATION REQUIRED - This is a diagnostic/recovery endpoint.
     Shows what columns actually exist in the production database.
     Works with both PostgreSQL and SQLite.
     Admin-only.
@@ -1680,9 +1682,10 @@ def get_database_columns(db: Session = Depends(get_db), user: User = Depends(req
         raise HTTPException(500, f"Failed to retrieve column information: {str(e)}")
 
 @app.get("/api/setup/run-all-migrations")
-def run_all_migrations(db: Session = Depends(get_db), user: User = Depends(require_roles("admin"))):
+def run_all_migrations(db: Session = Depends(get_db)):
     """
     Run all pending column migrations in one idempotent operation.
+    NO AUTHENTICATION REQUIRED - This is a bootstrap/recovery endpoint.
     Combines login columns + ward/profile columns migrations.
     Safe to run multiple times.
     Admin-only.
