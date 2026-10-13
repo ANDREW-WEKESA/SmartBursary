@@ -24,8 +24,13 @@ export function CascadingLocationSelector({
   const [constituencies, setConstituencies] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  console.log('🏗️ CascadingLocationSelector mounted/rendered');
+  console.log('Props:', { county, subCounty, ward, constituency });
+  console.log('State counties:', counties.length, 'items');
+
   // Load all counties on mount
   useEffect(() => {
+    console.log('🚀 useEffect: Loading counties on mount...');
     loadCounties();
   }, []);
 
@@ -61,10 +66,16 @@ export function CascadingLocationSelector({
   async function loadCounties() {
     try {
       setLoading(true);
+      console.log('🔍 Loading counties from /counties endpoint...');
       const data = await api('/counties');
+      console.log('✅ Counties data received:', data);
+      console.log('📊 Counties array:', data.counties);
+      console.log('📏 Counties count:', data.counties?.length);
       setCounties(data.counties || []);
+      console.log('✅ Counties state updated');
     } catch (error) {
-      console.error('Failed to load counties:', error);
+      console.error('❌ Failed to load counties:', error);
+      console.error('Error details:', error.message);
     } finally {
       setLoading(false);
     }
