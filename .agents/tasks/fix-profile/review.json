@@ -1,0 +1,8 @@
+{
+  "verdict": "CHANGES_REQUESTED",
+  "findings": [
+    "Constituency column missing from migration — /api/setup/run-all-migrations and /api/setup/add-ward-column both omit the constituency column, but the profile completion check requires bool(user.constituency.strip()). Add (\"constituency\", \"ALTER TABLE users ADD COLUMN IF NOT EXISTS constituency VARCHAR(100) DEFAULT ''\") to both endpoints' column lists.",
+    "SQL passed to text() is unparameterized — While the SQL strings contain no user input (safe in practice), the pattern of passing raw SQL to text() without placeholders is a code smell. Not a blocking issue since the SQL is hardcoded constants, but worth noting. If this pattern were copied elsewhere with user input, it would be a SQL injection vulnerability."
+  ],
+  "reviewDoc": "c:\\dev\\SmartBursary-Complete\\SmartBursary-Complete\\.agents\\tasks\\fix-profile\\2026-10-13-124747-review.md"
+}
