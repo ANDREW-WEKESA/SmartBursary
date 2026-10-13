@@ -5,7 +5,7 @@ import json, os, uuid, csv, io
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
-from sqlalchemy import select, or_, func
+from sqlalchemy import select, or_, func, text
 from sqlalchemy.orm import Session, joinedload
 from pydantic import EmailStr
 from .config import settings
@@ -1564,3 +1564,150 @@ def create_admin_account(db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         raise HTTPException(500, f"Failed to create admin account: {str(e)}")
+
+@app.get("/api/setup/add-ward-column")
+def add_ward_and_profile_columns(db: Session = Depends(get_db), user: User = Depends(require_roles("admin"))):
+    """
+    Add missing ward and profile columns to users table.
+    Safe to run multiple times - uses IF NOT EXISTS.
+    Admin-only endpoint.
+    """
+    from sqlalchemy import text
+    
+    columns_to_add = [
+        ("ward", "ALTER TABLE users ADD COLUMN IF NOT EXISTS ward VARCHAR(100) DEFAULT ''"),
+        ("sub_county", "ALTER TABLE users ADD COLUMN IF NOT EXISTS sub_county VARCHAR(100) DEFAULT ''"),
+        ("county", "ALTER TABLE users ADD COLUMN IF NOT EXISTS county VARCHAR(100) DEFAULT ''"),
+        ("address", "ALTER TABLE users ADD COLUMN IF NOT EXISTS address TEXT DEFAULT ''"),
+        ("guardian_name", "ALTER TABLE users ADD COLUMN IF NOT EXISTS guardian_name VARCHAR(160) DEFAULT ''"),
+        ("guardian_phone", "ALTER TABLE users ADD COLUMN IF NOT EXISTS guardian_phone VARCHAR(40) DEFAULT ''"),
+        ("guardian_relationship", "ALTER TABLE users ADD COLUMN IF NOT EXISTS guardian_relationship VARCHAR(50) DEFAULT ''"),
+        ("institution", "ALTER TABLE users ADD COLUMN IF NOT EXISTS institution VARCHAR(180) DEFAULT ''"),
+        ("student_number", "ALTER TABLE users ADD COLUMN IF NOT EXISTS student_number VARCHAR(100) DEFAULT ''"),
+        ("course", "ALTER TABLE users ADD COLUMN IF NOT EXISTS course VARCHAR(180) DEFAULT ''"),
+        ("year_of_study", "ALTER TABLE users ADD COLUMN IF NOT EXISTS year_of_study VARCHAR(40) DEFAULT ''"),
+        ("admission_year", "ALTER TABLE users ADD COLUMN IF NOT EXISTS admission_year INTEGER"),
+        ("national_id", "ALTER TABLE users ADD COLUMN IF NOT EXISTS national_id VARCHAR(100) DEFAULT ''"),
+        ("gender", "ALTER TABLE users ADD COLUMN IF NOT EXISTS gender VARCHAR(20) DEFAULT ''"),
+        ("date_of_birth", "ALTER TABLE users ADD COLUMN IF NOT EXISTS date_of_birth DATE"),
+        ("has_national_id_doc", "ALTER TABLE users ADD COLUMN IF NOT EXISTS has_national_id_doc BOOLEAN DEFAULT FALSE"),
+        ("has_student_id_doc", "ALTER TABLE users ADD COLUMN IF NOT EXISTS has_student_id_doc BOOLEAN DEFAULT FALSE"),
+        ("has_admission_letter", "ALTER TABLE users ADD COLUMN IF NOT EXISTS has_admission_letter BOOLEAN DEFAULT FALSE"),
+        ("monthly_household_income", "ALTER TABLE users ADD COLUMN IF NOT EXISTS monthly_household_income INTEGER DEFAULT 0"),
+        ("household_size", "ALTER TABLE users ADD COLUMN IF NOT EXISTS household_size INTEGER DEFAULT 1"),
+    ]
+    
+    results = []
+    try:
+        for column_name, sql in columns_to_add:
+            try:
+                db.execute(text(sql))
+                db.commit()
+                results.append({"column": column_name, "status": "success"})
+            except Exception as e:
+                db.rollback()
+                results.append({"column": column_name, "status": "error", "message": str(e)})
+        
+        successful = [r for r in results if r["status"] == "success"]
+        failed = [r for r in results if r["status"] == "error"]
+        
+        return {
+            "status": "completed",
+            "message": f"✅ Column migration completed: {len(successful)} succeeded, {len(failed)} failed",
+            "successful_columns": [r["column"] for r in successful],
+            "failed_columns": [{"column": r["column"], "error": r.get("message")} for r in failed],
+            "total_attempted": len(columns_to_add)
+        }
+    except Exception as e:
+        raise HTTPException(500, f"Failed to add columns: {str(e)}")
+
+@app.get("/api/setup/db-columns")
+def get_database_columns(db: Session = Depends(get_db), user: User = Depends(require_roles("admin"))):
+    """
+    Diagnostic endpoint to list all columns in the users table.
+    Shows what columns actually exist in the production database.
+    Admin-only.
+    """
+    from sqlalchemy import text
+    
+    try:
+        result = db.execute(text(
+            "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'users' ORDER BY ordinal_position"
+        ))
+        columns = [{"column_name": row[0], "data_type": row[1]} for row in result]
+        
+        return {
+            "status": "success",
+            "table": "users",
+            "total_columns": len(columns),
+            "columns": columns
+        }
+    except Exception as e:
+        raise HTTPException(500, f"Failed to retrieve column information: {str(e)}")
+
+@app.get("/api/setup/run-all-migrations")
+def run_all_migrations(db: Session = Depends(get_db), user: User = Depends(require_roles("admin"))):
+    """
+    Run all pending column migrations in one idempotent operation.
+    Combines login columns + ward/profile columns migrations.
+    Safe to run multiple times.
+    Admin-only.
+    """
+    from sqlalchemy import text
+    
+    all_migrations = [
+        # Login tracking columns
+        ("last_login", "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMP"),
+        ("login_count", "ALTER TABLE users ADD COLUMN IF NOT EXISTS login_count INTEGER DEFAULT 0"),
+        # Location columns
+        ("ward", "ALTER TABLE users ADD COLUMN IF NOT EXISTS ward VARCHAR(100) DEFAULT ''"),
+        ("sub_county", "ALTER TABLE users ADD COLUMN IF NOT EXISTS sub_county VARCHAR(100) DEFAULT ''"),
+        ("county", "ALTER TABLE users ADD COLUMN IF NOT EXISTS county VARCHAR(100) DEFAULT ''"),
+        ("address", "ALTER TABLE users ADD COLUMN IF NOT EXISTS address TEXT DEFAULT ''"),
+        # Guardian information
+        ("guardian_name", "ALTER TABLE users ADD COLUMN IF NOT EXISTS guardian_name VARCHAR(160) DEFAULT ''"),
+        ("guardian_phone", "ALTER TABLE users ADD COLUMN IF NOT EXISTS guardian_phone VARCHAR(40) DEFAULT ''"),
+        ("guardian_relationship", "ALTER TABLE users ADD COLUMN IF NOT EXISTS guardian_relationship VARCHAR(50) DEFAULT ''"),
+        # Educational details
+        ("institution", "ALTER TABLE users ADD COLUMN IF NOT EXISTS institution VARCHAR(180) DEFAULT ''"),
+        ("student_number", "ALTER TABLE users ADD COLUMN IF NOT EXISTS student_number VARCHAR(100) DEFAULT ''"),
+        ("course", "ALTER TABLE users ADD COLUMN IF NOT EXISTS course VARCHAR(180) DEFAULT ''"),
+        ("year_of_study", "ALTER TABLE users ADD COLUMN IF NOT EXISTS year_of_study VARCHAR(40) DEFAULT ''"),
+        ("admission_year", "ALTER TABLE users ADD COLUMN IF NOT EXISTS admission_year INTEGER"),
+        # Personal information
+        ("national_id", "ALTER TABLE users ADD COLUMN IF NOT EXISTS national_id VARCHAR(100) DEFAULT ''"),
+        ("gender", "ALTER TABLE users ADD COLUMN IF NOT EXISTS gender VARCHAR(20) DEFAULT ''"),
+        ("date_of_birth", "ALTER TABLE users ADD COLUMN IF NOT EXISTS date_of_birth DATE"),
+        # Document flags
+        ("has_national_id_doc", "ALTER TABLE users ADD COLUMN IF NOT EXISTS has_national_id_doc BOOLEAN DEFAULT FALSE"),
+        ("has_student_id_doc", "ALTER TABLE users ADD COLUMN IF NOT EXISTS has_student_id_doc BOOLEAN DEFAULT FALSE"),
+        ("has_admission_letter", "ALTER TABLE users ADD COLUMN IF NOT EXISTS has_admission_letter BOOLEAN DEFAULT FALSE"),
+        # Financial information
+        ("monthly_household_income", "ALTER TABLE users ADD COLUMN IF NOT EXISTS monthly_household_income INTEGER DEFAULT 0"),
+        ("household_size", "ALTER TABLE users ADD COLUMN IF NOT EXISTS household_size INTEGER DEFAULT 1"),
+    ]
+    
+    results = []
+    try:
+        for column_name, sql in all_migrations:
+            try:
+                db.execute(text(sql))
+                db.commit()
+                results.append({"column": column_name, "status": "success"})
+            except Exception as e:
+                db.rollback()
+                results.append({"column": column_name, "status": "error", "message": str(e)})
+        
+        successful = [r for r in results if r["status"] == "success"]
+        failed = [r for r in results if r["status"] == "error"]
+        
+        return {
+            "status": "completed",
+            "message": f"✅ All migrations completed: {len(successful)} succeeded, {len(failed)} failed",
+            "successful_columns": [r["column"] for r in successful],
+            "failed_columns": [{"column": r["column"], "error": r.get("message")} for r in failed],
+            "total_attempted": len(all_migrations),
+            "action": "Database schema is now up to date. Profile endpoint should work correctly."
+        }
+    except Exception as e:
+        raise HTTPException(500, f"Failed to run migrations: {str(e)}")
