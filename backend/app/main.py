@@ -475,6 +475,83 @@ async def upload_profile_document(document_type: str = Form(...), file: UploadFi
     db.refresh(doc)
     return doc
 
+@app.post("/api/profile/documents/national-id-dual", response_model=ProfileDocumentOut, status_code=201)
+async def upload_national_id_dual(
+    front: UploadFile = File(..., description="Front of National ID"),
+    back: UploadFile = File(..., description="Back of National ID"),
+    db: Session = Depends(get_db),
+    user: User = Depends(current_user)
+):
+    """
+    Upload National ID as two images (front and back) and convert to PDF
+    """
+    from .image_to_pdf import images_to_pdf
+    
+    # Validate front image
+    front_suffix = Path(front.filename or "").suffix.lower()
+    if front_suffix not in ['.jpg', '.jpeg', '.png']:
+        raise HTTPException(400, "Front image must be JPG or PNG")
+    
+    front_content = await front.read(settings.max_upload_mb * 1024 * 1024 + 1)
+    if not front_content:
+        raise HTTPException(400, "Front image is empty")
+    if len(front_content) > settings.max_upload_mb * 1024 * 1024:
+        raise HTTPException(413, f"Front image exceeds {settings.max_upload_mb} MB")
+    
+    # Validate back image
+    back_suffix = Path(back.filename or "").suffix.lower()
+    if back_suffix not in ['.jpg', '.jpeg', '.png']:
+        raise HTTPException(400, "Back image must be JPG or PNG")
+    
+    back_content = await back.read(settings.max_upload_mb * 1024 * 1024 + 1)
+    if not back_content:
+        raise HTTPException(400, "Back image is empty")
+    if len(back_content) > settings.max_upload_mb * 1024 * 1024:
+        raise HTTPException(413, f"Back image exceeds {settings.max_upload_mb} MB")
+    
+    # Convert images to PDF
+    try:
+        pdf_buffer = images_to_pdf(front_content, back_content)
+        pdf_content = pdf_buffer.read()
+    except Exception as e:
+        raise HTTPException(500, f"Failed to convert images to PDF: {str(e)}")
+    
+    # Delete existing National ID document
+    existing = db.scalars(select(ProfileDocument).where(
+        ProfileDocument.user_id == user.id,
+        ProfileDocument.document_type == "National ID"
+    )).first()
+    if existing:
+        old_path = Path(settings.upload_dir) / existing.stored_filename
+        if old_path.exists():
+            old_path.unlink()
+        db.delete(existing)
+    
+    # Store PDF
+    stored = f"profile_{uuid.uuid4().hex}.pdf"
+    folder = Path(settings.upload_dir)
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / stored).write_bytes(pdf_content)
+    
+    # Create document record
+    doc = ProfileDocument(
+        user_id=user.id,
+        document_type="National ID",
+        original_filename="National_ID_Front_Back.pdf",
+        stored_filename=stored,
+        content_type="application/pdf",
+        size_bytes=len(pdf_content)
+    )
+    db.add(doc)
+    
+    # Update flag
+    user.has_national_id_doc = True
+    
+    audit(db, user, "Uploaded National ID (front + back → PDF)", "ProfileDocument", doc.id)
+    db.commit()
+    db.refresh(doc)
+    return doc
+
 @app.get("/api/profile/documents/{document_id}/download")
 def download_profile_document(document_id: int, db: Session = Depends(get_db), user: User = Depends(current_user)):
     doc = db.get(ProfileDocument, document_id)
