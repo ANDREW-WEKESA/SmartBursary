@@ -21,6 +21,7 @@ class User(Base):
     gender: Mapped[str] = mapped_column(String(20), default="")
     county: Mapped[str] = mapped_column(String(100), default="")
     sub_county: Mapped[str] = mapped_column(String(100), default="")
+    ward: Mapped[str] = mapped_column(String(100), default="")
     address: Mapped[str] = mapped_column(Text, default="")
     guardian_name: Mapped[str] = mapped_column(String(160), default="")
     guardian_phone: Mapped[str] = mapped_column(String(40), default="")

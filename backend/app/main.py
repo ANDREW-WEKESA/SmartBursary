@@ -32,6 +32,17 @@ from .kenya_counties_constituencies import (
     TOTAL_CONSTITUENCIES,
     KENYA_COUNTIES_CONSTITUENCIES
 )
+from .kenya_locations_complete import (
+    get_all_counties as get_complete_counties,
+    get_sub_counties,
+    get_wards,
+    get_constituencies as get_complete_constituencies,
+    search_locations,
+    TOTAL_COUNTIES as TOTAL_COUNTIES_COMPLETE,
+    TOTAL_SUB_COUNTIES,
+    TOTAL_WARDS,
+    TOTAL_CONSTITUENCIES as TOTAL_CONSTITUENCIES_COMPLETE
+)
 
 STATUSES = {"Submitted", "Under Review", "Verification", "Additional Information Required", "Committee Review", "Approved", "Rejected", "Disbursed"}
 ALLOWED_EXT = {".pdf", ".jpg", ".jpeg", ".png"}
@@ -91,8 +102,72 @@ def health(): return {"status":"ok","service":"SmartBursary API"}
 def get_counties():
     """Get all 47 counties in Kenya"""
     return {
-        "counties": get_all_counties(),
-        "total": TOTAL_COUNTIES
+        "counties": get_complete_counties(),
+        "total": TOTAL_COUNTIES_COMPLETE
+    }
+
+@app.get("/api/locations/sub-counties")
+def get_location_sub_counties(county: str = Query(..., description="County name")):
+    """Get sub-counties for a specific county"""
+    sub_counties = get_sub_counties(county)
+    return {
+        "county": county,
+        "sub_counties": sub_counties,
+        "total": len(sub_counties)
+    }
+
+@app.get("/api/locations/wards")
+def get_location_wards(
+    county: str = Query(..., description="County name"),
+    sub_county: str = Query(..., description="Sub-county name")
+):
+    """Get wards for a specific sub-county"""
+    wards = get_wards(county, sub_county)
+    return {
+        "county": county,
+        "sub_county": sub_county,
+        "wards": wards,
+        "total": len(wards)
+    }
+
+@app.get("/api/locations/constituencies")
+def get_location_constituencies(
+    county: str = Query(..., description="County name"),
+    sub_county: str = Query(None, description="Sub-county name (optional)")
+):
+    """Get constituencies for a county or sub-county"""
+    constituencies = get_complete_constituencies(county, sub_county)
+    return {
+        "county": county,
+        "sub_county": sub_county,
+        "constituencies": constituencies,
+        "total": len(constituencies)
+    }
+
+@app.get("/api/locations/search")
+def search_location(
+    query: str = Query(..., min_length=2, description="Search query"),
+    limit: int = Query(50, ge=1, le=200)
+):
+    """
+    Search across all location levels (counties, sub-counties, wards, constituencies)
+    Returns matched locations with hierarchy information
+    """
+    results = search_locations(query, limit=limit)
+    return {
+        "query": query,
+        "results": results,
+        "total": len(results)
+    }
+
+@app.get("/api/locations/stats")
+def location_stats():
+    """Get statistics about Kenya administrative locations"""
+    return {
+        "counties": TOTAL_COUNTIES_COMPLETE,
+        "sub_counties": TOTAL_SUB_COUNTIES,
+        "wards": TOTAL_WARDS,
+        "constituencies": TOTAL_CONSTITUENCIES_COMPLETE
     }
 
 @app.get("/api/constituencies")
@@ -1323,11 +1398,19 @@ def add_login_tracking_columns():
                 print("✓ Added login_count column")
             except Exception as e:
                 print(f"login_count column might already exist: {e}")
+            
+            try:
+                conn.execute(text("ALTER TABLE users ADD COLUMN ward VARCHAR(100) DEFAULT ''"))
+                conn.commit()
+                print("✓ Added ward column")
+            except Exception as e:
+                print(f"ward column might already exist: {e}")
         
         return {
             "status": "success",
-            "message": "✅ Login tracking columns added to users table!",
-            "action": "You can now login successfully. Try logging in!"
+            "message": "✅ Database columns added/updated successfully!",
+            "columns_added": ["last_login", "login_count", "ward"],
+            "action": "You can now use the complete location hierarchy (County → Sub-County → Ward → Constituency)"
         }
     except Exception as e:
         raise HTTPException(500, f"Failed to add columns: {str(e)}")
