@@ -27,12 +27,23 @@ export function CascadingLocationSelector({
   console.log('🏗️ CascadingLocationSelector mounted/rendered');
   console.log('Props:', { county, subCounty, ward, constituency });
   console.log('State counties:', counties.length, 'items');
+  console.log('Callback functions:', {
+    onCountyChange: typeof onCountyChange,
+    onSubCountyChange: typeof onSubCountyChange,
+    onWardChange: typeof onWardChange,
+    onConstituencyChange: typeof onConstituencyChange
+  });
 
   // Load all counties on mount
   useEffect(() => {
     console.log('🚀 useEffect: Loading counties on mount...');
     loadCounties();
   }, []);
+
+  // Debug: Log when county prop changes
+  useEffect(() => {
+    console.log('🔄 County prop changed to:', county);
+  }, [county]);
 
   // Load sub-counties when county changes
   useEffect(() => {
@@ -126,7 +137,17 @@ export function CascadingLocationSelector({
 
   function handleCountyChange(e) {
     const value = e.target.value;
-    onCountyChange(value);
+    console.log('🏛️ County selected:', value);
+    console.log('Calling onCountyChange with:', value);
+    console.log('onCountyChange function:', typeof onCountyChange, onCountyChange);
+    
+    if (typeof onCountyChange === 'function') {
+      onCountyChange(value);
+      console.log('✅ onCountyChange called');
+    } else {
+      console.error('❌ onCountyChange is not a function!');
+    }
+    
     // Reset dependent fields
     onSubCountyChange('');
     onWardChange('');
