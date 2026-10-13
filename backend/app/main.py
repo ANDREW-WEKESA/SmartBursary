@@ -433,68 +433,87 @@ def me(user: User = Depends(current_user)): return user
 
 @app.get("/api/profile", response_model=ProfileOut)
 def get_profile(db: Session = Depends(get_db), user: User = Depends(current_user)):
-    user_with_docs = db.scalars(select(User).options(joinedload(User.profile_documents)).where(User.id == user.id)).unique().first()
-    return user_with_docs
+    try:
+        user_with_docs = db.scalars(select(User).options(joinedload(User.profile_documents)).where(User.id == user.id)).unique().first()
+        return user_with_docs
+    except Exception as e:
+        error_msg = str(e).lower()
+        if 'column' in error_msg or 'ward' in error_msg or 'sub_county' in error_msg:
+            raise HTTPException(
+                500,
+                "Database schema is outdated. Please ask an administrator to run /api/setup/run-all-migrations to update the database."
+            )
+        raise HTTPException(500, f"Failed to retrieve profile: {str(e)}")
 
 @app.patch("/api/profile", response_model=ProfileOut)
 async def update_profile(request: Request, db: Session = Depends(get_db), user: User = Depends(current_user)):
-    # Get raw JSON data without validation
     try:
-        data = await request.json()
-    except:
-        data = {}
-    
-    # Handle date parsing from various formats
-    if 'date_of_birth' in data and data['date_of_birth']:
-        dob = data['date_of_birth']
-        if isinstance(dob, str):
-            for fmt in ['%Y-%m-%d', '%d/%m/%Y', '%m/%d/%Y', '%d-%m-%Y']:
-                try:
-                    data['date_of_birth'] = datetime.strptime(dob, fmt).date()
-                    break
-                except ValueError:
-                    continue
-    
-    # Map of string fields
-    string_fields = ["national_id", "gender", "county", "sub_county", "ward", "constituency", "address", "guardian_name", "guardian_phone", "guardian_relationship", "institution", "student_number", "course", "year_of_study"]
-    
-    for key, value in data.items():
-        if key in string_fields:
-            setattr(user, key, value or "")
-        elif key == 'date_of_birth':
-            setattr(user, key, value)
-        elif key == 'admission_year':
-            if isinstance(value, int) and value > 0:
+        # Get raw JSON data without validation
+        try:
+            data = await request.json()
+        except:
+            data = {}
+        
+        # Handle date parsing from various formats
+        if 'date_of_birth' in data and data['date_of_birth']:
+            dob = data['date_of_birth']
+            if isinstance(dob, str):
+                for fmt in ['%Y-%m-%d', '%d/%m/%Y', '%m/%d/%Y', '%d-%m-%Y']:
+                    try:
+                        data['date_of_birth'] = datetime.strptime(dob, fmt).date()
+                        break
+                    except ValueError:
+                        continue
+        
+        # Map of string fields
+        string_fields = ["national_id", "gender", "county", "sub_county", "ward", "constituency", "address", "guardian_name", "guardian_phone", "guardian_relationship", "institution", "student_number", "course", "year_of_study"]
+        
+        for key, value in data.items():
+            if key in string_fields:
+                setattr(user, key, value or "")
+            elif key == 'date_of_birth':
                 setattr(user, key, value)
-        elif key in ['monthly_household_income', 'household_size']:
-            if value is not None:
-                try:
-                    setattr(user, key, int(value))
-                except (ValueError, TypeError):
-                    pass
-    
-    # Check if profile is complete
-    required_fields = [
-        user.date_of_birth is not None,
-        bool(user.national_id.strip()),
-        bool(user.gender.strip()),
-        bool(user.county.strip()),
-        bool(user.constituency.strip()),
-        bool(user.institution.strip()),
-        bool(user.student_number.strip()),
-        bool(user.course.strip()),
-        bool(user.year_of_study.strip()),
-        user.monthly_household_income > 0,
-        user.household_size > 0,
-        user.has_national_id_doc,
-        user.has_student_id_doc
-    ]
-    user.profile_complete = all(required_fields)
-    
-    audit(db, user, "Updated profile", "User", user.id)
-    db.commit()
-    user_with_docs = db.scalars(select(User).options(joinedload(User.profile_documents)).where(User.id == user.id)).unique().first()
-    return user_with_docs
+            elif key == 'admission_year':
+                if isinstance(value, int) and value > 0:
+                    setattr(user, key, value)
+            elif key in ['monthly_household_income', 'household_size']:
+                if value is not None:
+                    try:
+                        setattr(user, key, int(value))
+                    except (ValueError, TypeError):
+                        pass
+        
+        # Check if profile is complete
+        required_fields = [
+            user.date_of_birth is not None,
+            bool(user.national_id.strip()),
+            bool(user.gender.strip()),
+            bool(user.county.strip()),
+            bool(user.constituency.strip()),
+            bool(user.institution.strip()),
+            bool(user.student_number.strip()),
+            bool(user.course.strip()),
+            bool(user.year_of_study.strip()),
+            user.monthly_household_income > 0,
+            user.household_size > 0,
+            user.has_national_id_doc,
+            user.has_student_id_doc
+        ]
+        user.profile_complete = all(required_fields)
+        
+        audit(db, user, "Updated profile", "User", user.id)
+        db.commit()
+        user_with_docs = db.scalars(select(User).options(joinedload(User.profile_documents)).where(User.id == user.id)).unique().first()
+        return user_with_docs
+    except Exception as e:
+        db.rollback()
+        error_msg = str(e).lower()
+        if 'column' in error_msg or 'ward' in error_msg or 'sub_county' in error_msg:
+            raise HTTPException(
+                500,
+                "Database schema is outdated. Please ask an administrator to run /api/setup/run-all-migrations to update the database."
+            )
+        raise HTTPException(500, f"Failed to update profile: {str(e)}")
 
 @app.post("/api/profile/documents", response_model=ProfileDocumentOut, status_code=201)
 async def upload_profile_document(document_type: str = Form(...), file: UploadFile = File(...), db: Session = Depends(get_db), user: User = Depends(current_user)):
@@ -1380,7 +1399,6 @@ def add_login_tracking_columns():
     Safe to run - won't break if columns already exist.
     """
     try:
-        from sqlalchemy import text
         from .database import engine
         
         with engine.connect() as conn:
@@ -1572,7 +1590,6 @@ def add_ward_and_profile_columns(db: Session = Depends(get_db), user: User = Dep
     Safe to run multiple times - uses IF NOT EXISTS.
     Admin-only endpoint.
     """
-    from sqlalchemy import text
     
     columns_to_add = [
         ("ward", "ALTER TABLE users ADD COLUMN IF NOT EXISTS ward VARCHAR(100) DEFAULT ''"),
@@ -1626,22 +1643,38 @@ def get_database_columns(db: Session = Depends(get_db), user: User = Depends(req
     """
     Diagnostic endpoint to list all columns in the users table.
     Shows what columns actually exist in the production database.
+    Works with both PostgreSQL and SQLite.
     Admin-only.
     """
-    from sqlalchemy import text
-    
     try:
-        result = db.execute(text(
-            "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'users' ORDER BY ordinal_position"
-        ))
-        columns = [{"column_name": row[0], "data_type": row[1]} for row in result]
-        
-        return {
-            "status": "success",
-            "table": "users",
-            "total_columns": len(columns),
-            "columns": columns
-        }
+        # Try PostgreSQL information_schema first
+        try:
+            result = db.execute(text(
+                "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'users' ORDER BY ordinal_position"
+            ))
+            columns = [{"column_name": row[0], "data_type": row[1]} for row in result]
+            
+            return {
+                "status": "success",
+                "table": "users",
+                "total_columns": len(columns),
+                "columns": columns,
+                "method": "PostgreSQL information_schema"
+            }
+        except Exception:
+            # Fallback to SQLAlchemy inspector for SQLite or other databases
+            from sqlalchemy import inspect
+            inspector = inspect(db.bind)
+            columns_info = inspector.get_columns('users')
+            columns = [{"column_name": col['name'], "data_type": str(col['type'])} for col in columns_info]
+            
+            return {
+                "status": "success",
+                "table": "users",
+                "total_columns": len(columns),
+                "columns": columns,
+                "method": "SQLAlchemy inspector (database-agnostic)"
+            }
     except Exception as e:
         raise HTTPException(500, f"Failed to retrieve column information: {str(e)}")
 
@@ -1653,7 +1686,6 @@ def run_all_migrations(db: Session = Depends(get_db), user: User = Depends(requi
     Safe to run multiple times.
     Admin-only.
     """
-    from sqlalchemy import text
     
     all_migrations = [
         # Login tracking columns
