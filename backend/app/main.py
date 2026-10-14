@@ -98,6 +98,18 @@ def priority(income: int, household: int, duplicate: bool):
 @app.get("/api/health")
 def health(): return {"status":"ok","service":"SmartBursary API"}
 
+@app.get("/api/kenya-locations")
+def get_kenya_locations():
+    """Get all counties with their sub-counties (from kenya_locations.json)"""
+    import json
+    from pathlib import Path
+    
+    json_path = Path(__file__).parent.parent / "kenya_locations.json"
+    with open(json_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    
+    return data
+
 @app.get("/api/counties")
 def get_counties():
     """Get all 47 counties in Kenya"""
