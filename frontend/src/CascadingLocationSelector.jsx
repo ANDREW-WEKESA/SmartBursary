@@ -142,16 +142,20 @@ export function CascadingLocationSelector({
     console.log('onCountyChange function:', typeof onCountyChange, onCountyChange);
     
     if (typeof onCountyChange === 'function') {
-      onCountyChange(value);
-      console.log('✅ onCountyChange called');
+      try {
+        onCountyChange(value);
+        console.log('✅ onCountyChange called successfully');
+      } catch (error) {
+        console.error('❌ Error calling onCountyChange:', error);
+      }
     } else {
       console.error('❌ onCountyChange is not a function!');
     }
     
     // Reset dependent fields
-    onSubCountyChange('');
-    onWardChange('');
-    onConstituencyChange('');
+    if (typeof onSubCountyChange === 'function') onSubCountyChange('');
+    if (typeof onWardChange === 'function') onWardChange('');
+    if (typeof onConstituencyChange === 'function') onConstituencyChange('');
   }
 
   function handleSubCountyChange(e) {
@@ -279,10 +283,11 @@ export function CascadingLocationSelector({
         <div className="location-select-wrapper has-icon">
           <MapPin size={16} className="map-icon" />
           <select 
-            value={county} 
+            value={county || ''} 
             onChange={handleCountyChange}
             required={required}
             disabled={loading || counties.length === 0}
+            key={`county-${counties.length}`}
           >
             <option value="">Select county...</option>
             {counties.map((c) => (
