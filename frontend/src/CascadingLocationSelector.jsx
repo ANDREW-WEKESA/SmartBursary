@@ -136,8 +136,13 @@ export function CascadingLocationSelector({
   }
 
   function handleCountyChange(e) {
+    e.preventDefault();
+    e.stopPropagation();
     const value = e.target.value;
+    console.log('🏛️ County onChange EVENT FIRED!');
     console.log('🏛️ County selected:', value);
+    console.log('Event type:', e.type);
+    console.log('Event target:', e.target);
     console.log('Calling onCountyChange with:', value);
     console.log('onCountyChange function:', typeof onCountyChange, onCountyChange);
     
@@ -285,7 +290,10 @@ export function CascadingLocationSelector({
           <select 
             value={county || ''} 
             onChange={handleCountyChange}
+            onInput={handleCountyChange}
             onClick={() => console.log('🖱️ County select CLICKED')}
+            onFocus={() => console.log('🎯 County select FOCUSED')}
+            onBlur={() => console.log('👋 County select BLURRED')}
             required={required}
             disabled={loading || counties.length === 0}
             key={`county-${counties.length}`}
