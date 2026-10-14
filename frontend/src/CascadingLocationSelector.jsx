@@ -136,15 +136,18 @@ export function CascadingLocationSelector({
   }
 
   function handleCountyChange(e) {
-    e.preventDefault();
-    e.stopPropagation();
     const value = e.target.value;
     console.log('🏛️ County onChange EVENT FIRED!');
     console.log('🏛️ County selected:', value);
     console.log('Event type:', e.type);
-    console.log('Event target:', e.target);
-    console.log('Calling onCountyChange with:', value);
-    console.log('onCountyChange function:', typeof onCountyChange, onCountyChange);
+    
+    // Ignore empty selections (user might be just opening dropdown)
+    if (!value || value === '') {
+      console.log('⚠️ Ignoring empty value selection');
+      return;
+    }
+    
+    console.log('✅ Valid county selected, calling onCountyChange with:', value);
     
     if (typeof onCountyChange === 'function') {
       try {
