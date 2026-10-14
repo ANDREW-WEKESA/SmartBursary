@@ -1,0 +1,290 @@
+{
+  "_attribution": "Compiled from official Kenya government sources (KNBS, County Governments). CC-BY-4.0 compatible.",
+  "_last_updated": "2024-10",
+  "_note": "Sub-counties are administrative divisions, not constituencies",
+  "counties": [
+    {
+      "code": 1,
+      "name": "Mombasa",
+      "capital": "Mombasa City",
+      "sub_counties": ["Changamwe", "Jomvu", "Kisauni", "Likoni", "Mvita", "Nyali"]
+    },
+    {
+      "code": 2,
+      "name": "Kwale",
+      "capital": "Kwale",
+      "sub_counties": ["Kinango", "Lungalunga", "Matuga", "Msambweni"]
+    },
+    {
+      "code": 3,
+      "name": "Kilifi",
+      "capital": "Kilifi",
+      "sub_counties": ["Ganze", "Kaloleni", "Kilifi North", "Kilifi South", "Magarini", "Malindi", "Rabai"]
+    },
+    {
+      "code": 4,
+      "name": "Tana River",
+      "capital": "Hola",
+      "sub_counties": ["Bura", "Galole", "Garsen"]
+    },
+    {
+      "code": 5,
+      "name": "Lamu",
+      "capital": "Lamu",
+      "sub_counties": ["Lamu East", "Lamu West"]
+    },
+    {
+      "code": 6,
+      "name": "Taita Taveta",
+      "capital": "Voi",
+      "sub_counties": ["Mwatate", "Taveta", "Voi", "Wundanyi"]
+    },
+    {
+      "code": 7,
+      "name": "Garissa",
+      "capital": "Garissa",
+      "sub_counties": ["Dadaab", "Fafi", "Garissa Township", "Hulugho", "Ijara", "Lagdera Balambala"]
+    },
+    {
+      "code": 8,
+      "name": "Wajir",
+      "capital": "Wajir",
+      "sub_counties": ["Eldas", "Tarbaj", "Wajir East", "Wajir North", "Wajir South", "Wajir West"]
+    },
+    {
+      "code": 9,
+      "name": "Mandera",
+      "capital": "Mandera",
+      "sub_counties": ["Banissa", "Lafey", "Mandera East", "Mandera North", "Mandera South", "Mandera West"]
+    },
+    {
+      "code": 10,
+      "name": "Marsabit",
+      "capital": "Marsabit",
+      "sub_counties": ["Laisamis", "Moyale", "North Horr", "Saku"]
+    },
+    {
+      "code": 11,
+      "name": "Isiolo",
+      "capital": "Isiolo",
+      "sub_counties": ["Central", "Merti"]
+    },
+    {
+      "code": 12,
+      "name": "Meru",
+      "capital": "Meru",
+      "sub_counties": ["Buuri", "Igembe Central", "Igembe North", "Igembe South", "Imenti Central", "Imenti North", "Imenti South", "Tigania East", "Tigania West"]
+    },
+    {
+      "code": 13,
+      "name": "Tharaka Nithi",
+      "capital": "Chuka",
+      "sub_counties": ["Chuka", "Maara", "Tharaka"]
+    },
+    {
+      "code": 14,
+      "name": "Embu",
+      "capital": "Embu",
+      "sub_counties": ["Embu East", "Embu North", "Embu West", "Mbeere North", "Mbeere South"]
+    },
+    {
+      "code": 15,
+      "name": "Kitui",
+      "capital": "Kitui",
+      "sub_counties": ["Kitui Central", "Kitui East", "Kitui Rural", "Kitui South", "Kitui West", "Mwingi Central", "Mwingi North", "Mwingi West"]
+    },
+    {
+      "code": 16,
+      "name": "Machakos",
+      "capital": "Machakos",
+      "sub_counties": ["Kangundo", "Kathiani", "Machakos Town", "Masinga", "Matungulu", "Mavoko", "Mwala", "Yatta"]
+    },
+    {
+      "code": 17,
+      "name": "Makueni",
+      "capital": "Wote",
+      "sub_counties": ["Kaiti", "Kibwezi East", "Kibwezi West", "Kilome", "Makueni", "Mbooni"]
+    },
+    {
+      "code": 18,
+      "name": "Nyandarua",
+      "capital": "Ol Kalou",
+      "sub_counties": ["Kinangop", "Kipipiri", "Ndaragwa", "Ol Kalou", "Ol Joro Orok"]
+    },
+    {
+      "code": 19,
+      "name": "Nyeri",
+      "capital": "Nyeri",
+      "sub_counties": ["Kieni East", "Kieni West", "Mathira East", "Mathira West", "Mukurweini", "Nyeri Central", "Nyeri South", "Othaya", "Tetu"]
+    },
+    {
+      "code": 20,
+      "name": "Kirinyaga",
+      "capital": "Kerugoya",
+      "sub_counties": ["Kirinyaga Central", "Kirinyaga East", "Kirinyaga West", "Mwea"]
+    },
+    {
+      "code": 21,
+      "name": "Murang'a",
+      "capital": "Murang'a",
+      "sub_counties": ["Gatanga", "Kahuro", "Kandara", "Kangema", "Kigumo", "Kiharu", "Mathioya"]
+    },
+    {
+      "code": 22,
+      "name": "Kiambu",
+      "capital": "Kiambu",
+      "sub_counties": ["Gatundu North", "Gatundu South", "Githunguri", "Juja", "Kabete", "Kiambaa", "Kiambu", "Kikuyu", "Limuru", "Ruiru", "Thika Town", "Lari"]
+    },
+    {
+      "code": 23,
+      "name": "Turkana",
+      "capital": "Lodwar",
+      "sub_counties": ["Kibish", "Loima", "Lokichoggio", "Turkana Central", "Turkana East", "Turkana North", "Turkana South", "Turkana West"]
+    },
+    {
+      "code": 24,
+      "name": "West Pokot",
+      "capital": "Kapenguria",
+      "sub_counties": ["Kacheliba", "Kapenguria", "Sigor", "West Pokot"]
+    },
+    {
+      "code": 25,
+      "name": "Samburu",
+      "capital": "Maralal",
+      "sub_counties": ["Samburu Central", "Samburu East", "Samburu North"]
+    },
+    {
+      "code": 26,
+      "name": "Trans Nzoia",
+      "capital": "Kitale",
+      "sub_counties": ["Cherangany", "Endebess", "Kiminini", "Kwanza", "Saboti"]
+    },
+    {
+      "code": 27,
+      "name": "Uasin Gishu",
+      "capital": "Eldoret",
+      "sub_counties": ["Ainabkoi", "Kapseret", "Kesses", "Moiben", "Soy", "Turbo"]
+    },
+    {
+      "code": 28,
+      "name": "Elgeyo Marakwet",
+      "capital": "Iten",
+      "sub_counties": ["Keiyo North", "Keiyo South", "Marakwet East", "Marakwet West"]
+    },
+    {
+      "code": 29,
+      "name": "Nandi",
+      "capital": "Kapsabet",
+      "sub_counties": ["Aldai", "Chesumei", "Emgwen", "Mosop", "Nandi Hills", "Tinderet"]
+    },
+    {
+      "code": 30,
+      "name": "Baringo",
+      "capital": "Kabarnet",
+      "sub_counties": ["Baringo Central", "Baringo North", "Baringo South", "East Pokot", "Mogotio", "Tiaty"]
+    },
+    {
+      "code": 31,
+      "name": "Laikipia",
+      "capital": "Rumuruti",
+      "sub_counties": ["Laikipia East", "Laikipia North", "Laikipia West"]
+    },
+    {
+      "code": 32,
+      "name": "Nakuru",
+      "capital": "Nakuru",
+      "sub_counties": ["Bahati", "Gilgil", "Kuresoi North", "Kuresoi South", "Molo", "Naivasha", "Nakuru Town East", "Nakuru Town West", "Njoro", "Rongai", "Subukia"]
+    },
+    {
+      "code": 33,
+      "name": "Narok",
+      "capital": "Narok",
+      "sub_counties": ["Narok East", "Narok North", "Narok South", "Narok West", "Transmara East", "Transmara West"]
+    },
+    {
+      "code": 34,
+      "name": "Kajiado",
+      "capital": "Kajiado",
+      "sub_counties": ["Kajiado Central", "Kajiado East", "Kajiado North", "Kajiado South", "Kajiado West"]
+    },
+    {
+      "code": 35,
+      "name": "Kericho",
+      "capital": "Kericho",
+      "sub_counties": ["Ainamoi", "Belgut", "Bureti", "Kipkelion East", "Kipkelion West", "Soin Sigowet"]
+    },
+    {
+      "code": 36,
+      "name": "Bomet",
+      "capital": "Bomet",
+      "sub_counties": ["Bomet Central", "Bomet East", "Chepalungu", "Konoin", "Sotik"]
+    },
+    {
+      "code": 37,
+      "name": "Kakamega",
+      "capital": "Kakamega",
+      "sub_counties": ["Butere", "Ikolomani", "Khwisero", "Likuyani", "Lugari", "Lurambi", "Matete", "Mumias East", "Mumias West", "Navakholo", "Shinyalu", "Matungu"]
+    },
+    {
+      "code": 38,
+      "name": "Vihiga",
+      "capital": "Vihiga",
+      "sub_counties": ["Emuhaya", "Hamisi", "Luanda", "Sabatia", "Vihiga"]
+    },
+    {
+      "code": 39,
+      "name": "Bungoma",
+      "capital": "Bungoma",
+      "sub_counties": ["Bumula", "Kabuchai", "Kanduyi", "Kimilili", "Mt Elgon", "Sirisia", "Tongaren", "Webuye East", "Webuye West"],
+      "_note": "Tongaren is both a sub-county (administrative unit with 6 wards including Milima) and a constituency (electoral division)"
+    },
+    {
+      "code": 40,
+      "name": "Busia",
+      "capital": "Busia",
+      "sub_counties": ["Budalangi", "Butula", "Funyula", "Nambale", "Samia", "Teso North", "Teso South"]
+    },
+    {
+      "code": 41,
+      "name": "Siaya",
+      "capital": "Siaya",
+      "sub_counties": ["Alego Usonga", "Bondo", "Gem", "Rarieda", "Ugenya", "Ugunja"]
+    },
+    {
+      "code": 42,
+      "name": "Kisumu",
+      "capital": "Kisumu",
+      "sub_counties": ["Kisumu Central", "Kisumu East", "Kisumu West", "Muhoroni", "Nyakach", "Nyando", "Seme"]
+    },
+    {
+      "code": 43,
+      "name": "Homa Bay",
+      "capital": "Homa Bay",
+      "sub_counties": ["Homa Bay Town", "Kabondo", "Karachuonyo", "Kasipul", "Mbita", "Ndhiwa", "Rangwe", "Suba"]
+    },
+    {
+      "code": 44,
+      "name": "Migori",
+      "capital": "Migori",
+      "sub_counties": ["Awendo", "Kuria East", "Kuria West", "Mabera", "Ntimaru", "Rongo", "Suna East", "Suna West", "Uriri"]
+    },
+    {
+      "code": 45,
+      "name": "Kisii",
+      "capital": "Kisii",
+      "sub_counties": ["Bobasi", "Bomachoge Borabu", "Bomachoge Chache", "Bonchari", "Kitutu Chache North", "Kitutu Chache South", "Nyamache", "South Mugirango", "Sameta"]
+    },
+    {
+      "code": 46,
+      "name": "Nyamira",
+      "capital": "Nyamira",
+      "sub_counties": ["Borabu", "Manga", "Masaba North", "Nyamira North", "Nyamira South"]
+    },
+    {
+      "code": 47,
+      "name": "Nairobi",
+      "capital": "Nairobi City",
+      "sub_counties": ["Dagoretti North", "Dagoretti South", "Embakasi Central", "Embakasi East", "Embakasi North", "Embakasi South", "Embakasi West", "Kamukunji", "Kasarani", "Kibra", "Lang'ata", "Makadara", "Mathare", "Njiru", "Ruaraka", "Starehe", "Westlands"]
+    }
+  ]
+}
