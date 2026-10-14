@@ -285,13 +285,14 @@ export function CascadingLocationSelector({
           <select 
             value={county || ''} 
             onChange={handleCountyChange}
+            onClick={() => console.log('🖱️ County select CLICKED')}
             required={required}
             disabled={loading || counties.length === 0}
             key={`county-${counties.length}`}
           >
             <option value="">Select county...</option>
             {counties.map((c) => (
-              <option key={c} value={c}>{c}</option>
+              <option key={c} value={c} onClick={() => console.log('🎯 Option clicked:', c)}>{c}</option>
             ))}
           </select>
           <ChevronDown size={16} className="select-icon" />
