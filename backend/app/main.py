@@ -68,7 +68,8 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title=settings.app_name, version="1.0.0", description="SmartBursary applications, review and tracking API", lifespan=lifespan)
 
 # CORS Middleware - allows frontend from different domains
-allowed_origins = settings.cors_origins.split(",")
+# Production: CORS_ORIGINS should list all allowed frontend domains
+allowed_origins = settings.cors_origins.split(",") if settings.cors_origins else []
 app.add_middleware(
     CORSMiddleware, 
     allow_origins=allowed_origins,
@@ -336,20 +337,42 @@ def resend_otp(email: EmailStr, db: Session = Depends(get_db)):
 
 @app.post("/api/auth/login", response_model=TokenOut)
 def login(data: LoginIn, db: Session = Depends(get_db)):
-    user = db.scalar(select(User).where(User.email == str(data.email).lower()))
-    if not user or not verify_password(data.password,user.password_hash): raise HTTPException(401,"Email or password is incorrect")
-    if not user.active: raise HTTPException(403,"This account is disabled")
-    # Track last login (with safe fallback for old database)
     try:
-        previous_login = getattr(user, 'last_login', None)
-        user.last_login = datetime.utcnow()
-        user.login_count = getattr(user, 'login_count', 0) + 1
-        db.commit()
-        return {"access_token":create_token(user),"token_type":"bearer","user":user,"last_login":previous_login.isoformat() if previous_login else None,"login_count":user.login_count-1}
+        user = db.scalar(select(User).where(User.email == str(data.email).lower()))
+        if not user or not verify_password(data.password,user.password_hash): raise HTTPException(401,"Email or password is incorrect")
+        if not user.active: raise HTTPException(403,"This account is disabled")
+        # Track last login (with safe fallback for old database)
+        try:
+            previous_login = getattr(user, 'last_login', None)
+            user.last_login = datetime.utcnow()
+            user.login_count = getattr(user, 'login_count', 0) + 1
+            db.commit()
+        except Exception as e:
+            # Fallback if columns don't exist yet
+            print(f"Warning: Could not update login tracking: {e}")
+            db.rollback()
+        
+        # Return properly serialized user data
+        return {
+            "access_token": create_token(user),
+            "token_type": "bearer",
+            "user": {
+                "id": user.id,
+                "full_name": user.full_name,
+                "email": user.email,
+                "phone": user.phone or "",
+                "role": user.role,
+                "constituency": user.constituency or "",
+                "profile_complete": user.profile_complete
+            }
+        }
+    except HTTPException:
+        raise
     except Exception as e:
-        # Fallback if columns don't exist yet
-        db.rollback()
-        return {"access_token":create_token(user),"token_type":"bearer","user":user}
+        print(f"ERROR in login endpoint: {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(500, f"Login failed: {str(e)}")
 
 @app.post("/api/auth/forgot-password", status_code=200)
 def forgot_password(data: ForgotPasswordIn, db: Session = Depends(get_db)):
