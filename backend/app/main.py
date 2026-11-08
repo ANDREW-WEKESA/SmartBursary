@@ -1462,6 +1462,32 @@ def recreate_database_tables(db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(500, f"Failed to recreate tables: {str(e)}")
 
+@app.get("/api/setup/promote-reviewer")
+def promote_to_reviewer(email: str, db: Session = Depends(get_db)):
+    """Promote a user to reviewer role - for setup only"""
+    try:
+        user = db.scalar(select(User).where(User.email == email.lower()))
+        if not user:
+            raise HTTPException(404, f"User {email} not found")
+        
+        user.role = "reviewer"
+        db.commit()
+        
+        return {
+            "status": "success",
+            "message": f"User {email} promoted to reviewer",
+            "user": {
+                "email": user.email,
+                "full_name": user.full_name,
+                "role": user.role
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(500, f"Failed to promote user: {str(e)}")
+
 @app.get("/api/setup/check-database")
 def check_database_connection():
     """Check database connection status"""
