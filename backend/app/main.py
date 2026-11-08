@@ -1480,6 +1480,59 @@ def recreate_database_tables(db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(500, f"Failed to recreate tables: {str(e)}")
 
+@app.get("/api/setup/run-migration")
+def run_production_migration(db: Session = Depends(get_db)):
+    """
+    One-time endpoint to run production database migration.
+    Adds missing columns: ward, last_login, login_count
+    No authentication required for initial setup.
+    """
+    from sqlalchemy import text, inspect
+    
+    try:
+        connection = db.connection()
+        inspector = inspect(connection)
+        
+        # Check which columns are missing
+        existing_columns = [col['name'] for col in inspector.get_columns('users')]
+        migrations_needed = []
+        
+        if 'ward' not in existing_columns:
+            migrations_needed.append(('ward', 'VARCHAR(100) DEFAULT \'\''))
+        if 'last_login' not in existing_columns:
+            migrations_needed.append(('last_login', 'TIMESTAMP NULL'))
+        if 'login_count' not in existing_columns:
+            migrations_needed.append(('login_count', 'INTEGER DEFAULT 0'))
+        
+        if not migrations_needed:
+            return {
+                "status": "success",
+                "message": "All columns already exist - no migration needed",
+                "existing_columns": existing_columns
+            }
+        
+        # Run migrations
+        results = []
+        for column, col_type in migrations_needed:
+            try:
+                sql = text(f"ALTER TABLE users ADD COLUMN {column} {col_type}")
+                connection.execute(sql)
+                connection.commit()
+                results.append(f"✓ Added column: {column}")
+            except Exception as e:
+                results.append(f"✗ Failed to add {column}: {str(e)}")
+        
+        return {
+            "status": "success",
+            "message": "Production migration completed",
+            "migrations": results,
+            "columns_after": [col['name'] for col in inspector.get_columns('users')]
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(500, f"Migration failed: {str(e)}")
+
 @app.get("/api/setup/seed-constituencies")
 def seed_all_constituencies(db: Session = Depends(get_db)):
     """
