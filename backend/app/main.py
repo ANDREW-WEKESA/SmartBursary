@@ -1462,6 +1462,34 @@ def recreate_database_tables(db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(500, f"Failed to recreate tables: {str(e)}")
 
+@app.get("/api/setup/check-database")
+def check_database_connection():
+    """Check database connection status"""
+    import os
+    try:
+        db_url = os.getenv('DATABASE_URL', 'Not set')
+        # Hide password in output
+        safe_url = db_url.replace(db_url.split(':')[2].split('@')[0], '****') if ':' in db_url else db_url
+        
+        # Try to connect
+        from app.database import SessionLocal
+        db = SessionLocal()
+        db.execute(text("SELECT 1"))
+        db.close()
+        
+        return {
+            "status": "success",
+            "message": "Database connection working",
+            "database_url": safe_url,
+            "database_type": "postgresql" if "postgresql" in db_url else "sqlite"
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Database connection failed: {str(e)}",
+            "database_url": safe_url if 'safe_url' in locals() else "Not available"
+        }
+
 @app.get("/api/setup/run-migration")
 def run_production_migration(db: Session = Depends(get_db)):
     """
