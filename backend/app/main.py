@@ -205,7 +205,7 @@ def get_constituencies(
             "showing": min(limit, len(all_const))
         }
 
-@app.get("/api/auth/register", status_code=201)
+@app.post("/api/auth/register", status_code=201)
 def register(data: RegisterIn, db: Session = Depends(get_db)):
     """Register a new user and send OTP for email verification."""
     email = str(data.email).lower()
