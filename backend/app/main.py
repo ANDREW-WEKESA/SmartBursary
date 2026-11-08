@@ -207,56 +207,38 @@ def get_constituencies(
 
 @app.post("/api/auth/register", status_code=201)
 def register(data: RegisterIn, db: Session = Depends(get_db)):
-    """Register a new user and send OTP for email verification."""
+    """Register a new user (auto-verified for demo)."""
     email = str(data.email).lower()
     
     # Check if user already exists
     if db.scalar(select(User.id).where(User.email == email)):
         raise HTTPException(409, "An account with this email already exists")
     
-    # Create user but mark as unverified
+    # Create user and auto-verify (email verification disabled for demo)
     user = User(
         full_name=data.full_name.strip(),
         email=email,
         phone=data.phone.strip(),
         password_hash=hash_password(data.password),
         role="applicant",
-        email_verified=False,
-        active=False  # Account inactive until email verified
+        email_verified=True,  # Auto-verified for demo
+        active=True  # Account active immediately
     )
     db.add(user)
-    db.flush()
     
-    # Generate and store OTP
-    otp_code = generate_otp()
-    expires_at = datetime.utcnow() + timedelta(minutes=10)
-    
-    # Remove any existing OTPs for this email
-    db.execute(select(EmailOTP).where(EmailOTP.email == email)).scalars().all()
-    for old_otp in db.scalars(select(EmailOTP).where(EmailOTP.email == email)).all():
-        db.delete(old_otp)
-    
-    otp = EmailOTP(
-        email=email,
-        otp_code=otp_code,
-        purpose="registration",
-        expires_at=expires_at
-    )
-    db.add(otp)
-    
-    audit(db, None, "User registered (pending verification)", "User", user.id, email)
+    audit(db, None, "User registered (auto-verified)", "User", user.id, email)
     db.commit()
     
-    # Send OTP via email
-    send_otp_email(email, user.full_name, otp_code)
-    
-    # Send OTP via SMS
-    sms_service.send_registration_sms(user.phone, user.full_name, otp_code)
+    # Email/SMS verification disabled for demo purposes
+    # In production, uncomment the OTP code below:
+    # otp_code = generate_otp()
+    # send_otp_email(email, user.full_name, otp_code)
+    # sms_service.send_registration_sms(user.phone, user.full_name, otp_code)
     
     return {
-        "message": "Registration successful. Please check your email and phone for the verification code.",
+        "message": "Registration successful. You can now login with your credentials.",
         "email": email,
-        "requires_verification": True
+        "requires_verification": False
     }
 
 @app.post("/api/auth/verify-otp", response_model=TokenOut)
