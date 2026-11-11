@@ -62,6 +62,24 @@
   opacity: 0.7;
 }
 
+.program-card.eligible-highlight {
+  border: 2px solid #1976d2;
+  box-shadow: 0 4px 16px rgba(25, 118, 210, 0.15);
+  position: relative;
+}
+
+.program-card.eligible-highlight::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border-radius: 15px;
+  background: linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(25, 118, 210, 0.05) 100%);
+  z-index: -1;
+}
+
 .constituency-badge.ineligible {
   background: #fbe4e1;
   color: #a62922;
@@ -107,6 +125,11 @@
   font-weight: 800;
 }
 
+:root[data-theme="dark"] .program-card.eligible-highlight {
+  border-color: #42a5f5;
+  box-shadow: 0 4px 16px rgba(66, 165, 245, 0.2);
+}
+
 :root[data-theme="dark"] .constituency-badge.eligible {
   background: #17372a;
   border-color: #2b5b43;
@@ -124,3 +147,4 @@
   border-color: #2b5b43;
   color: #76dbab;
 }
+
