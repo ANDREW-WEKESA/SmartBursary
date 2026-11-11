@@ -54,9 +54,9 @@ async def lifespan(app: FastAPI):
     with SessionLocal() as db:
         if not db.scalar(select(Bursary.id).limit(1)):
             seeds = [
-                Bursary(name="Constituency Development Bursary", description="Financial assistance for eligible secondary and tertiary learners.", eligibility="Needy student in secondary or tertiary school; constituency resident", amount_kes=15000, show_amount=True, deadline=date(2026,11,15), required_documents=json.dumps(["National ID or birth certificate","School or college admission letter","Fee structure","Parent or guardian income proof"])),
-                Bursary(name="County Education Fund", description="County education support for eligible students.", eligibility="County resident enrolled in a recognised university or TVET college", amount_kes=25000, show_amount=True, deadline=date(2026,10,30), required_documents=json.dumps(["National ID","Student ID","Fee statement","Latest transcript"])),
-                Bursary(name="STEM Merit Bursary", description="Support for learners pursuing science, engineering and ICT courses.", eligibility="Year 2 or above in a science, engineering or ICT course; mean grade B or higher", amount_kes=30000, show_amount=True, deadline=date(2026,9,20), required_documents=json.dumps(["National ID","Student ID","Transcript"]))]
+                Bursary(name="Constituency Development Bursary", description="Financial assistance for eligible secondary and tertiary learners.", eligibility="Needy student in secondary or tertiary school; constituency resident", amount_kes=6000, show_amount=True, deadline=date(2026,11,15), required_documents=json.dumps(["National ID or birth certificate","School or college admission letter","Fee structure","Parent or guardian income proof"])),
+                Bursary(name="County Education Fund", description="County education support for eligible students.", eligibility="County resident enrolled in a recognised university or TVET college", amount_kes=6000, show_amount=True, deadline=date(2026,10,30), required_documents=json.dumps(["National ID","Student ID","Fee statement","Latest transcript"])),
+                Bursary(name="STEM Merit Bursary", description="Support for learners pursuing science, engineering and ICT courses.", eligibility="Year 2 or above in a science, engineering or ICT course; mean grade B or higher", amount_kes=6000, show_amount=True, deadline=date(2026,9,20), required_documents=json.dumps(["National ID","Student ID","Transcript"]))]
             db.add_all(seeds); db.commit()
         admin_email = os.getenv("ADMIN_EMAIL", "admin@smartbursary.com").lower()
         admin_password = os.getenv("ADMIN_PASSWORD", "ChangeMe123!")
@@ -1605,7 +1605,7 @@ def seed_all_constituencies(db: Session = Depends(get_db)):
                     description=f"Constituency Development Fund bursary for eligible students from {constituency} constituency, {county} County.",
                     eligibility=f"Must be a resident of {constituency} constituency and enrolled in a recognized educational institution (secondary, TVET, college or university).",
                     constituency=constituency,
-                    amount_kes=20000,
+                    amount_kes=6000,
                     show_amount=True,
                     deadline=date(2027, 3, 31),
                     required_documents=json.dumps([

@@ -41,7 +41,7 @@ def seed_all_constituencies():
                     description=f"Constituency Development Fund bursary for eligible students from {constituency} constituency, {county} County.",
                     eligibility=f"Must be a resident of {constituency} constituency and enrolled in a recognized educational institution (secondary, TVET, college or university).",
                     constituency=constituency,
-                    amount_kes=20000,  # Standard amount
+                    amount_kes=6000,  # Standard amount
                     show_amount=True,
                     deadline=date(2027, 3, 31),  # Default deadline
                     required_documents=json.dumps([
