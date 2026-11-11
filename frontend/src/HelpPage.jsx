@@ -1,42 +1,67 @@
 import React, { useState } from 'react';
-import { HelpCircle, MessageCircle, Mail, Phone, Book, Search, ChevronDown, ChevronUp } from 'lucide-react';
+import { HelpCircle, MessageCircle, Mail, Phone, Book, Search, ChevronDown, ChevronUp, MapPin } from 'lucide-react';
 
 function FAQItem({ question, answer }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <div style={{
-      border: '1px solid var(--border)',
-      borderRadius: '8px',
+      border: '2px solid',
+      borderColor: isOpen ? 'var(--green)' : 'var(--border)',
+      borderRadius: '12px',
       marginBottom: '12px',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      transition: 'all 0.3s ease',
+      boxShadow: isOpen ? '0 4px 12px rgba(0, 128, 0, 0.1)' : 'none'
     }}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         style={{
           width: '100%',
-          padding: '16px',
+          padding: '18px 20px',
           border: 'none',
-          background: isOpen ? 'var(--bg-subtle)' : 'white',
+          background: isOpen ? 'linear-gradient(135deg, #e8f5e9 0%, #f1f8f4 100%)' : 'white',
           textAlign: 'left',
           cursor: 'pointer',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          fontSize: '0.95rem',
-          fontWeight: '600'
+          fontSize: '1rem',
+          fontWeight: '600',
+          color: isOpen ? 'var(--green)' : 'var(--text)',
+          transition: 'all 0.2s ease'
+        }}
+        onMouseEnter={(e) => {
+          if (!isOpen) e.currentTarget.style.background = '#f8f9fa';
+        }}
+        onMouseLeave={(e) => {
+          if (!isOpen) e.currentTarget.style.background = 'white';
         }}
       >
         <span>{question}</span>
-        {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+        <div style={{
+          background: isOpen ? 'var(--green)' : 'var(--bg-subtle)',
+          borderRadius: '50%',
+          width: '28px',
+          height: '28px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'all 0.3s ease',
+          color: isOpen ? 'white' : 'var(--text)'
+        }}>
+          {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        </div>
       </button>
       {isOpen && (
         <div style={{
-          padding: '16px',
-          borderTop: '1px solid var(--border)',
-          fontSize: '0.9rem',
-          lineHeight: '1.6',
-          color: 'var(--text)'
+          padding: '20px 24px',
+          borderTop: '1px solid #e0e0e0',
+          fontSize: '0.95rem',
+          lineHeight: '1.8',
+          color: '#424242',
+          background: 'white',
+          animation: 'slideDown 0.3s ease'
         }}>
           {answer}
         </div>
@@ -152,31 +177,81 @@ export function HelpPage() {
     <div>
       {/* Header */}
       <div style={{
-        background: 'linear-gradient(135deg, var(--green) 0%, #0a5438 100%)',
-        padding: '48px 24px',
-        borderRadius: '12px',
-        marginBottom: '32px',
+        background: 'linear-gradient(135deg, #1b5e20 0%, #2e7d32 50%, #388e3c 100%)',
+        padding: '60px 24px',
+        borderRadius: '16px',
+        marginBottom: '40px',
         color: 'white',
-        textAlign: 'center'
+        textAlign: 'center',
+        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
+        position: 'relative',
+        overflow: 'hidden'
       }}>
-        <div style={{ fontSize: '48px', marginBottom: '16px' }}>
-          <HelpCircle size={48} />
+        <div style={{
+          position: 'absolute',
+          top: '-50px',
+          right: '-50px',
+          width: '200px',
+          height: '200px',
+          background: 'rgba(255, 255, 255, 0.1)',
+          borderRadius: '50%'
+        }} />
+        <div style={{
+          position: 'absolute',
+          bottom: '-30px',
+          left: '-30px',
+          width: '150px',
+          height: '150px',
+          background: 'rgba(255, 255, 255, 0.1)',
+          borderRadius: '50%'
+        }} />
+        <div style={{
+          position: 'relative',
+          zIndex: 1
+        }}>
+          <div style={{
+            fontSize: '48px',
+            marginBottom: '20px',
+            display: 'inline-flex',
+            padding: '20px',
+            background: 'rgba(255, 255, 255, 0.15)',
+            borderRadius: '50%',
+            backdropFilter: 'blur(10px)'
+          }}>
+            <HelpCircle size={48} strokeWidth={2} />
+          </div>
+          <h1 style={{
+            fontSize: '2.5rem',
+            marginBottom: '16px',
+            fontWeight: '700',
+            textShadow: '0 2px 4px rgba(0,0,0,0.2)'
+          }}>
+            How can we help you?
+          </h1>
+          <p style={{
+            fontSize: '1.15rem',
+            opacity: 0.95,
+            maxWidth: '600px',
+            margin: '0 auto'
+          }}>
+            Find answers to common questions or contact our support team
+          </p>
         </div>
-        <h1 style={{ fontSize: '2rem', marginBottom: '12px' }}>How can we help you?</h1>
-        <p style={{ fontSize: '1.1rem', opacity: 0.9 }}>
-          Find answers to common questions or contact our support team
-        </p>
       </div>
 
       {/* Search */}
-      <div className="panel" style={{ marginBottom: '32px' }}>
+      <div className="panel" style={{
+        marginBottom: '40px',
+        boxShadow: '0 4px 15px rgba(0, 0, 0, 0.08)',
+        border: '2px solid var(--border)'
+      }}>
         <div style={{ position: 'relative' }}>
-          <Search size={20} style={{
+          <Search size={22} style={{
             position: 'absolute',
-            left: '16px',
+            left: '20px',
             top: '50%',
             transform: 'translateY(-50%)',
-            color: 'var(--mute)'
+            color: 'var(--green)'
           }} />
           <input
             type="text"
@@ -185,10 +260,20 @@ export function HelpPage() {
             placeholder="Search for help... e.g. 'how to apply'"
             style={{
               width: '100%',
-              padding: '16px 16px 16px 48px',
-              border: '1px solid var(--border)',
+              padding: '20px 20px 20px 56px',
+              border: 'none',
               borderRadius: '8px',
-              fontSize: '1rem'
+              fontSize: '1.05rem',
+              outline: 'none',
+              transition: 'all 0.2s ease'
+            }}
+            onFocus={(e) => {
+              e.target.parentElement.parentElement.style.borderColor = 'var(--green)';
+              e.target.parentElement.parentElement.style.boxShadow = '0 4px 20px rgba(0, 128, 0, 0.15)';
+            }}
+            onBlur={(e) => {
+              e.target.parentElement.parentElement.style.borderColor = 'var(--border)';
+              e.target.parentElement.parentElement.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.08)';
             }}
           />
         </div>
@@ -197,72 +282,214 @@ export function HelpPage() {
       {/* Quick Contact */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-        gap: '16px',
-        marginBottom: '32px'
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+        gap: '20px',
+        marginBottom: '40px'
       }}>
-        <div className="panel" style={{ textAlign: 'center', padding: '24px' }}>
-          <Mail size={32} style={{ color: 'var(--green)', marginBottom: '12px' }} />
-          <h3 style={{ marginBottom: '8px' }}>Email Support</h3>
-          <p style={{ fontSize: '0.9rem', color: 'var(--mute)', marginBottom: '12px' }}>
+        <div className="panel" style={{
+          textAlign: 'center',
+          padding: '32px 24px',
+          background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
+          border: '2px solid var(--border)',
+          transition: 'all 0.3s ease',
+          cursor: 'pointer'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-5px)';
+          e.currentTarget.style.boxShadow = '0 8px 25px rgba(0, 128, 0, 0.15)';
+          e.currentTarget.style.borderColor = 'var(--green)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = 'none';
+          e.currentTarget.style.borderColor = 'var(--border)';
+        }}>
+          <div style={{
+            background: 'linear-gradient(135deg, var(--green) 0%, #2e7d32 100%)',
+            width: '64px',
+            height: '64px',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 16px',
+            boxShadow: '0 4px 12px rgba(0, 128, 0, 0.3)'
+          }}>
+            <Mail size={32} style={{ color: 'white' }} />
+          </div>
+          <h3 style={{ marginBottom: '10px', fontSize: '1.2rem', color: 'var(--green)' }}>Email Support</h3>
+          <p style={{ fontSize: '0.9rem', color: 'var(--mute)', marginBottom: '16px' }}>
             We respond within 24 hours
           </p>
-          <a href="mailto:support@smartbursary.com" style={{ color: 'var(--green)', fontWeight: '600' }}>
+          <a href="mailto:support@smartbursary.com" style={{
+            color: 'var(--green)',
+            fontWeight: '700',
+            fontSize: '1rem',
+            textDecoration: 'none'
+          }}>
             support@smartbursary.com
           </a>
         </div>
 
-        <div className="panel" style={{ textAlign: 'center', padding: '24px' }}>
-          <Phone size={32} style={{ color: 'var(--green)', marginBottom: '12px' }} />
-          <h3 style={{ marginBottom: '8px' }}>Phone Support</h3>
-          <p style={{ fontSize: '0.9rem', color: 'var(--mute)', marginBottom: '12px' }}>
+        <div className="panel" style={{
+          textAlign: 'center',
+          padding: '32px 24px',
+          background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
+          border: '2px solid var(--border)',
+          transition: 'all 0.3s ease',
+          cursor: 'pointer'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-5px)';
+          e.currentTarget.style.boxShadow = '0 8px 25px rgba(0, 128, 0, 0.15)';
+          e.currentTarget.style.borderColor = 'var(--green)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = 'none';
+          e.currentTarget.style.borderColor = 'var(--border)';
+        }}>
+          <div style={{
+            background: 'linear-gradient(135deg, var(--green) 0%, #2e7d32 100%)',
+            width: '64px',
+            height: '64px',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 16px',
+            boxShadow: '0 4px 12px rgba(0, 128, 0, 0.3)'
+          }}>
+            <Phone size={32} style={{ color: 'white' }} />
+          </div>
+          <h3 style={{ marginBottom: '10px', fontSize: '1.2rem', color: 'var(--green)' }}>Phone Support</h3>
+          <p style={{ fontSize: '0.9rem', color: 'var(--mute)', marginBottom: '16px' }}>
             Mon-Fri, 8am-5pm EAT
           </p>
-          <a href="tel:+254700000000" style={{ color: 'var(--green)', fontWeight: '600' }}>
+          <a href="tel:+254700000000" style={{
+            color: 'var(--green)',
+            fontWeight: '700',
+            fontSize: '1rem',
+            textDecoration: 'none'
+          }}>
             +254 700 000 000
           </a>
         </div>
 
-        <div className="panel" style={{ textAlign: 'center', padding: '24px' }}>
-          <MessageCircle size={32} style={{ color: 'var(--green)', marginBottom: '12px' }} />
-          <h3 style={{ marginBottom: '8px' }}>CDF Office</h3>
-          <p style={{ fontSize: '0.9rem', color: 'var(--mute)', marginBottom: '12px' }}>
+        <div className="panel" style={{
+          textAlign: 'center',
+          padding: '32px 24px',
+          background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
+          border: '2px solid var(--border)',
+          transition: 'all 0.3s ease',
+          cursor: 'pointer'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-5px)';
+          e.currentTarget.style.boxShadow = '0 8px 25px rgba(0, 128, 0, 0.15)';
+          e.currentTarget.style.borderColor = 'var(--green)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = 'none';
+          e.currentTarget.style.borderColor = 'var(--border)';
+        }}>
+          <div style={{
+            background: 'linear-gradient(135deg, var(--green) 0%, #2e7d32 100%)',
+            width: '64px',
+            height: '64px',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 16px',
+            boxShadow: '0 4px 12px rgba(0, 128, 0, 0.3)'
+          }}>
+            <MapPin size={32} style={{ color: 'white' }} />
+          </div>
+          <h3 style={{ marginBottom: '10px', fontSize: '1.2rem', color: 'var(--green)' }}>CDF Office</h3>
+          <p style={{ fontSize: '0.9rem', color: 'var(--mute)', marginBottom: '16px' }}>
             Visit your constituency office
           </p>
-          <span style={{ color: 'var(--green)', fontWeight: '600' }}>
+          <span style={{
+            color: 'var(--green)',
+            fontWeight: '700',
+            fontSize: '1rem'
+          }}>
             Find your local office
           </span>
         </div>
       </div>
 
       {/* FAQs */}
-      <div className="panel">
-        <div style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Book size={24} style={{ color: 'var(--green)' }} />
-          <h2 style={{ margin: 0 }}>Frequently Asked Questions</h2>
+      <div className="panel" style={{
+        boxShadow: '0 4px 15px rgba(0, 0, 0, 0.08)'
+      }}>
+        <div style={{
+          marginBottom: '32px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          paddingBottom: '16px',
+          borderBottom: '3px solid var(--green)'
+        }}>
+          <div style={{
+            background: 'var(--green)',
+            padding: '10px',
+            borderRadius: '8px',
+            display: 'flex'
+          }}>
+            <Book size={24} style={{ color: 'white' }} />
+          </div>
+          <h2 style={{ margin: 0, fontSize: '1.6rem', color: 'var(--green)' }}>Frequently Asked Questions</h2>
         </div>
 
         {filteredFAQs.length === 0 && searchQuery && (
           <div style={{
             textAlign: 'center',
-            padding: '48px 24px',
+            padding: '60px 24px',
             color: 'var(--mute)'
           }}>
-            <HelpCircle size={48} style={{ marginBottom: '16px', opacity: 0.5 }} />
-            <p>No results found for "{searchQuery}"</p>
-            <p style={{ fontSize: '0.9rem' }}>Try a different search term or contact support</p>
+            <div style={{
+              background: 'var(--bg-subtle)',
+              width: '80px',
+              height: '80px',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 20px'
+            }}>
+              <HelpCircle size={48} style={{ opacity: 0.4 }} />
+            </div>
+            <p style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '8px' }}>
+              No results found for "{searchQuery}"
+            </p>
+            <p style={{ fontSize: '0.95rem' }}>
+              Try a different search term or contact support
+            </p>
           </div>
         )}
 
         {filteredFAQs.map((category, idx) => (
-          <div key={idx} style={{ marginBottom: '32px' }}>
+          <div key={idx} style={{ marginBottom: '40px' }}>
             <h3 style={{
-              fontSize: '1.1rem',
-              marginBottom: '16px',
+              fontSize: '1.25rem',
+              marginBottom: '20px',
               color: 'var(--green)',
-              paddingBottom: '8px',
-              borderBottom: '2px solid var(--border)'
+              paddingBottom: '12px',
+              borderBottom: '2px solid #e0e0e0',
+              fontWeight: '700',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px'
             }}>
+              <div style={{
+                width: '6px',
+                height: '24px',
+                background: 'var(--green)',
+                borderRadius: '3px'
+              }} />
               {category.category}
             </h3>
             {category.questions.map((item, qIdx) => (
@@ -274,22 +501,72 @@ export function HelpPage() {
 
       {/* Still need help */}
       <div className="panel" style={{
-        marginTop: '32px',
-        background: 'var(--bg-subtle)',
+        marginTop: '40px',
+        background: 'linear-gradient(135deg, #e8f5e9 0%, #f1f8f4 100%)',
         textAlign: 'center',
-        padding: '32px'
+        padding: '48px 32px',
+        border: '2px solid var(--green)',
+        position: 'relative',
+        overflow: 'hidden'
       }}>
-        <h3 style={{ marginBottom: '12px' }}>Still need help?</h3>
-        <p style={{ color: 'var(--mute)', marginBottom: '20px' }}>
-          Our support team is here to assist you
-        </p>
-        <a
-          href="mailto:support@smartbursary.com"
-          className="btn primary"
-          style={{ display: 'inline-block', textDecoration: 'none' }}
-        >
-          <Mail size={17} /> Contact Support
-        </a>
+        <div style={{
+          position: 'absolute',
+          top: '-20px',
+          right: '-20px',
+          width: '120px',
+          height: '120px',
+          background: 'rgba(0, 128, 0, 0.08)',
+          borderRadius: '50%'
+        }} />
+        <div style={{
+          position: 'absolute',
+          bottom: '-30px',
+          left: '-30px',
+          width: '150px',
+          height: '150px',
+          background: 'rgba(0, 128, 0, 0.08)',
+          borderRadius: '50%'
+        }} />
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <h3 style={{
+            marginBottom: '12px',
+            fontSize: '1.5rem',
+            color: 'var(--green)'
+          }}>
+            Still need help?
+          </h3>
+          <p style={{
+            color: '#424242',
+            marginBottom: '24px',
+            fontSize: '1.05rem'
+          }}>
+            Our support team is here to assist you
+          </p>
+          <a
+            href="mailto:support@smartbursary.com"
+            className="btn primary"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              textDecoration: 'none',
+              fontSize: '1.05rem',
+              padding: '14px 32px',
+              boxShadow: '0 4px 12px rgba(0, 128, 0, 0.3)',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 128, 0, 0.4)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 128, 0, 0.3)';
+            }}
+          >
+            <Mail size={20} /> Contact Support
+          </a>
+        </div>
       </div>
     </div>
   );
