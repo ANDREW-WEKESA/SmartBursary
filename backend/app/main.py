@@ -205,9 +205,9 @@ def get_constituencies(
             "showing": min(limit, len(all_const))
         }
 
-@app.post("/api/auth/register", status_code=201)
+@app.post("/api/auth/register", response_model=TokenOut, status_code=201)
 def register(data: RegisterIn, db: Session = Depends(get_db)):
-    """Register a new user (auto-verified for demo)."""
+    """Register a new user (auto-verified and auto-logged in for demo)."""
     email = str(data.email).lower()
     
     # Check if user already exists
@@ -228,17 +228,17 @@ def register(data: RegisterIn, db: Session = Depends(get_db)):
     
     audit(db, None, "User registered (auto-verified)", "User", user.id, email)
     db.commit()
+    db.refresh(user)
     
     # Email/SMS verification disabled for demo purposes
-    # In production, uncomment the OTP code below:
-    # otp_code = generate_otp()
-    # send_otp_email(email, user.full_name, otp_code)
-    # sms_service.send_registration_sms(user.phone, user.full_name, otp_code)
+    # Auto-login the user immediately
+    token_data = {"sub": str(user.id), "role": user.role}
+    access_token = create_access_token(token_data)
     
     return {
-        "message": "Registration successful. You can now login with your credentials.",
-        "email": email,
-        "requires_verification": False
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": user_out(user)
     }
 
 @app.post("/api/auth/verify-otp", response_model=TokenOut)
