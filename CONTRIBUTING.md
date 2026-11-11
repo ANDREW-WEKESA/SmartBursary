@@ -1,80 +1,104 @@
 # Contributing to SmartBursary
 
-Thank you for your interest in contributing! This document provides guidelines for contributions.
+Thank you for your interest in contributing to SmartBursary! This document provides guidelines for contributing to the project.
+
+## Code of Conduct
+
+Be respectful and inclusive. We welcome contributions from everyone.
+
+## How to Contribute
+
+### Reporting Bugs
+
+1. Check if the bug has already been reported in Issues
+2. If not, create a new issue with:
+   - Clear title and description
+   - Steps to reproduce
+   - Expected vs actual behavior
+   - Screenshots if applicable
+   - Environment details (OS, browser, etc.)
+
+### Suggesting Features
+
+1. Check if the feature has been suggested
+2. Create a new issue with:
+   - Clear description of the feature
+   - Use cases and benefits
+   - Possible implementation approach
+
+### Pull Requests
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Test your changes
+5. Commit with clear messages
+6. Push to your fork
+7. Create a Pull Request
 
 ## Development Setup
 
-1. Clone the repository
-2. Install dependencies
-3. Set up local database
-4. Run development servers
+### Backend
+```bash
+cd backend
+python -m venv .venv
+.\.venv\Scripts\activate  # Windows
+source .venv/bin/activate  # Mac/Linux
+pip install -r requirements.txt
+```
 
-See README.md for detailed setup instructions.
+### Frontend
+```bash
+cd frontend
+npm install
+```
 
-## Code Style
+## Coding Standards
 
 ### Python (Backend)
-- Follow PEP 8
+- Follow PEP 8 style guide
 - Use type hints where appropriate
-- Write docstrings for functions
+- Write docstrings for functions and classes
 - Keep functions focused and small
 
-### JavaScript (Frontend)
-- Use modern ES6+ features
+### JavaScript/React (Frontend)
+- Use functional components
 - Follow React best practices
-- Use descriptive variable names
-- Add comments for complex logic
+- Use meaningful variable names
+- Keep components small and reusable
 
-## Commit Messages
+## Commit Message Guidelines
 
-Format: `type: brief description`
+Format: `type: description`
 
 Types:
 - `feat`: New feature
 - `fix`: Bug fix
-- `docs`: Documentation
-- `style`: Formatting
-- `refactor`: Code restructuring
-- `test`: Tests
-- `chore`: Maintenance
+- `docs`: Documentation changes
+- `style`: Code style changes (formatting)
+- `refactor`: Code refactoring
+- `test`: Adding tests
+- `chore`: Maintenance tasks
 
 Examples:
-- `feat: Add email notifications for application status`
-- `fix: Resolve login redirect issue`
+- `feat: Add email notification for approved applications`
+- `fix: Resolve CORS error on production`
 - `docs: Update API documentation`
-
-## Pull Request Process
-
-1. Create a feature branch
-2. Make your changes
-3. Write/update tests
-4. Update documentation
-5. Submit pull request
-6. Address review feedback
 
 ## Testing
 
-- Write tests for new features
-- Ensure existing tests pass
-- Test on multiple browsers
-- Verify mobile responsiveness
+### Backend
+```bash
+pytest
+```
 
-## Reporting Issues
-
-Include:
-- Clear description
-- Steps to reproduce
-- Expected vs actual behavior
-- Screenshots if applicable
-- Environment details
-
-## Code of Conduct
-
-- Be respectful
-- Be collaborative
-- Be constructive
-- Focus on solutions
+### Frontend
+```bash
+npm test
+```
 
 ## Questions?
 
-Open an issue or reach out to maintainers.
+Feel free to open an issue or reach out to the maintainers.
+
+Thank you for contributing! 🎉
