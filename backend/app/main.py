@@ -701,8 +701,14 @@ def create_staff_user(data: StaffUserIn, db: Session = Depends(get_db), user: Us
 
 @app.get("/api/bursaries", response_model=list[BursaryOut])
 def list_bursaries(include_inactive: bool = False, constituency: str = "", search: str = "", db: Session = Depends(get_db), user: User = Depends(current_user)):
-    q = select(Bursary).order_by(Bursary.deadline)
-    if not include_inactive or user.role == "applicant": q = q.where(Bursary.active.is_(True))
+    # Show ALL bursaries regardless of deadline or active status
+    # This allows users to see historical bursaries and plan for future ones
+    q = select(Bursary).order_by(Bursary.deadline.desc())
+    
+    # Only filter by inactive flag if explicitly set to false
+    # By default, show everything (active and inactive)
+    if include_inactive is False:
+        q = q.where(Bursary.active.is_(True))
     
     # Applicants can VIEW all bursaries (no filtering) for transparency
     # But they can only APPLY to their constituency (enforced in create_application)
