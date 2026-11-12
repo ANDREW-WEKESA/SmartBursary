@@ -40,9 +40,24 @@ export async function api(path, options={}){
   const headers = new Headers(options.headers || {});
   if(getToken()) headers.set('Authorization',`Bearer ${getToken()}`);
   if(options.body && !(options.body instanceof FormData) && typeof options.body !== 'string') {headers.set('Content-Type','application/json'); options={...options,body:JSON.stringify(options.body)};}
-  const res=await fetch(`${BASE}${path}`,{...options,headers});
-  if(!res.ok){let message=`Request failed (${res.status})`;try{const d=await res.json();message=typeof d.detail==='string'?d.detail:message}catch{};throw new Error(message)}
-  if(res.status===204)return null;
-  const type=res.headers.get('content-type')||'';
-  return type.includes('application/json')?res.json():res.blob();
+  
+  // Add timeout support (90 seconds for auth endpoints, 30 seconds for others)
+  const timeout = path.includes('/auth/') ? 90000 : 30000;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  
+  try {
+    const res=await fetch(`${BASE}${path}`,{...options,headers,signal:controller.signal});
+    clearTimeout(timeoutId);
+    if(!res.ok){let message=`Request failed (${res.status})`;try{const d=await res.json();message=typeof d.detail==='string'?d.detail:message}catch{};throw new Error(message)}
+    if(res.status===204)return null;
+    const type=res.headers.get('content-type')||'';
+    return type.includes('application/json')?res.json():res.blob();
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error('Request timed out. The server may be starting up - please try again in a moment.');
+    }
+    throw error;
+  }
 }
