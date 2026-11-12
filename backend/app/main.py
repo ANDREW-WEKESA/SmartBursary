@@ -231,14 +231,7 @@ def register(data: RegisterIn, db: Session = Depends(get_db)):
     
     # Email/SMS verification disabled for demo purposes
     # Auto-login the user immediately
-    token_data = {"sub": str(user.id), "role": user.role}
-    access_token = create_access_token(token_data)
-    
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "user": user_out(user)
-    }
+    return {"access_token": create_token(user), "user": user}
 
 @app.post("/api/auth/verify-otp", response_model=TokenOut)
 def verify_otp(data: VerifyOTPIn, db: Session = Depends(get_db)):
